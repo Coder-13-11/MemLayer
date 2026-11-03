@@ -24,6 +24,7 @@ from typing import Any, Iterable, Iterator, Mapping
 
 from . import models as m
 from .db import connect
+from .pg import PgConnection, is_pg_url, tsquery_terms
 from .models import NotFound, ValidationError
 
 _STOPWORDS = frozenset(
@@ -59,10 +60,18 @@ def _record_dict(row: sqlite3.Row) -> dict[str, Any]:
 
 
 class MemoryStore:
-    def __init__(self, path: str | os.PathLike = ":memory:"):
+    def __init__(self, path: str | os.PathLike = ":memory:", *, schema: str = "public"):
+        """``path`` is a SQLite file (local use) or a postgres:// URL, in which case ``schema`` (or a ``#schema``
+        suffix on the URL) names the Postgres schema that holds this memory (one per account when hosted)."""
         self.path = str(path)
-        self.conn = connect(path)
-        self._lock = threading.RLock()
+        if is_pg_url(self.path):
+            url, _, in_url = self.path.partition("#")  # "postgresql://.../db#schema" also names the schema
+            self.conn = PgConnection(url, in_url or schema)
+            self._lock = self.conn.lock  # one shared connection per process: transactions must not interleave
+        else:
+            self.conn = connect(path)
+            self._lock = threading.RLock()
+        self.dialect = getattr(self.conn, "dialect", "sqlite")
         self._read_depth = 0
 
     def close(self) -> None:
@@ -74,27 +83,42 @@ class MemoryStore:
     def _read(self) -> Iterator[sqlite3.Connection]:
         with self._lock:
             if self._read_depth == 0:
-                self.conn.execute("PRAGMA query_only = ON")
+                if self.dialect == "pg":
+                    self.conn.begin(read_only=True)
+                else:
+                    self.conn.execute("PRAGMA query_only = ON")
             self._read_depth += 1
             try:
                 yield self.conn
             finally:
                 self._read_depth -= 1
                 if self._read_depth == 0:
-                    self.conn.execute("PRAGMA query_only = OFF")
+                    if self.dialect == "pg":
+                        self.conn.commit()
+                    else:
+                        self.conn.execute("PRAGMA query_only = OFF")
 
     @contextmanager
     def _write(self) -> Iterator[sqlite3.Connection]:
         with self._lock:
             if self._read_depth:
                 raise RuntimeError("write attempted inside a read-only operation")
-            self.conn.execute("BEGIN IMMEDIATE")
+            if self.dialect == "pg":
+                self.conn.begin()
+            else:
+                self.conn.execute("BEGIN IMMEDIATE")
             try:
                 yield self.conn
             except BaseException:
-                self.conn.execute("ROLLBACK")
+                if self.dialect == "pg":
+                    self.conn.rollback()
+                else:
+                    self.conn.execute("ROLLBACK")
                 raise
-            self.conn.execute("COMMIT")
+            if self.dialect == "pg":
+                self.conn.commit()
+            else:
+                self.conn.execute("COMMIT")
 
     # ---------------------------------------------------------------- projects
 
@@ -539,6 +563,7 @@ class MemoryStore:
         kinds = [m.require_choice(k, m.RECORD_KINDS, "kind") for k in kinds or []]
         statuses = [m.require_choice(s, m.STATUSES, "status") for s in statuses or []]
         match = fts_query(query or "")
+        pg_match = tsquery_terms(query or "", _STOPWORDS)
         with self._read() as c:
             where, params = [], []
             if project:
@@ -555,7 +580,16 @@ class MemoryStore:
                     f"IN ({','.join('?' * len(statuses))})"
                 )
                 params += statuses
-            if match:
+            if match and self.dialect == "pg":
+                sql = (
+                    "SELECT r.*, p.name AS project_name, -ts_rank(r.fts, q) AS score, "
+                    "ts_headline('english', r.content, q, 'StartSel=[,StopSel=],MaxWords=16,MinWords=6') AS snippet "
+                    "FROM records r JOIN projects p ON p.id = r.project_id, to_tsquery('english', ?) q "
+                    "WHERE r.fts @@ q" + "".join(f" AND {w}" for w in where)
+                    + " ORDER BY score, r.importance DESC LIMIT ?"
+                )
+                rows = c.execute(sql, (pg_match, *params, limit)).fetchall()
+            elif match:
                 sql = (
                     "SELECT r.*, p.name AS project_name, bm25(records_fts) AS score, "
                     "snippet(records_fts, 1, '[', ']', ' … ', 16) AS snippet "
@@ -584,18 +618,23 @@ class MemoryStore:
                 })
             sources = []
             if include_sources and match:
-                sparams: list[Any] = [match]
+                sparams: list[Any] = [pg_match if self.dialect == "pg" else match]
                 swhere = ""
                 if project:
                     swhere = " AND s.project_id = ?"
                     sparams.append(self._project(c, project)["id"])
-                for s in c.execute(
+                source_sql = (
+                    "SELECT s.id, s.project_id, s.title, s.kind, s.origin_model, s.imported_at, "
+                    "ts_headline('english', s.content, q, 'StartSel=[,StopSel=],MaxWords=16,MinWords=6') AS snippet "
+                    "FROM sources s, to_tsquery('english', ?) q "
+                    f"WHERE s.fts @@ q{swhere} ORDER BY ts_rank(s.fts, q) DESC LIMIT ?"
+                ) if self.dialect == "pg" else (
                     "SELECT s.id, s.project_id, s.title, s.kind, s.origin_model, s.imported_at, "
                     "snippet(sources_fts, 1, '[', ']', ' … ', 16) AS snippet "
                     "FROM sources_fts JOIN sources s ON s.rowid = sources_fts.rowid "
-                    f"WHERE sources_fts MATCH ?{swhere} ORDER BY bm25(sources_fts) LIMIT ?",
-                    (*sparams, min(limit, 10)),
-                ):
+                    f"WHERE sources_fts MATCH ?{swhere} ORDER BY bm25(sources_fts) LIMIT ?"
+                )
+                for s in c.execute(source_sql, (*sparams, min(limit, 10))):
                     sources.append(dict(s))
         return {"query": query, "results": results, "source_matches": sources}
 
@@ -619,7 +658,7 @@ class MemoryStore:
                           (SELECT count(*) FROM relations), (SELECT count(*) FROM evidence),
                           (SELECT count(*) FROM sources), (SELECT coalesce(max(id), 0) FROM record_history)"""
             ).fetchone()
-        return "|".join(str(v) for v in row)
+        return "|".join(str(row[i]) for i in range(8))
 
     def activity(self, project_ref: str | None = None, limit: int = 50, since: str | None = None) -> list[dict[str, Any]]:
         """Newest-first feed of what happened: records saved, changed, linked, evidenced; sources imported."""
@@ -651,7 +690,7 @@ class MemoryStore:
                             s.origin_model, s.id
                        FROM sources s
                    ) a
-                   WHERE (? IS NULL OR a.project_id = ?) AND (? IS NULL OR a.at > ?)
+                   WHERE (CAST(? AS TEXT) IS NULL OR a.project_id = ?) AND (CAST(? AS TEXT) IS NULL OR a.at > ?)
                    ORDER BY a.at DESC LIMIT ?""",
                 (pid, pid, since, since, limit),
             ).fetchall()

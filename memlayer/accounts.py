@@ -27,6 +27,7 @@ from pathlib import Path
 from typing import Any, Iterator
 
 from .models import NotFound, ValidationError
+from .pg import PgConnection, is_pg_url
 from .store import MemoryStore, new_id, now
 
 SCHEMA = """
@@ -82,7 +83,15 @@ CREATE TABLE IF NOT EXISTS beta_requests (
     topic TEXT NOT NULL DEFAULT '',
     created_at TEXT NOT NULL
 );
+-- Dashboard sign-in sessions (hashed session ids).
+CREATE TABLE IF NOT EXISTS web_sessions (
+    id_hash TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at TEXT NOT NULL,
+    expires_at INTEGER NOT NULL
+);
 """
+ACCOUNTS_SCHEMA = "memlayer_accounts"  # Postgres schema holding the tables above
 
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 MIN_PASSWORD = 10
@@ -117,8 +126,18 @@ _DUMMY_HASH = hash_password(secrets.token_hex(8))
 
 
 class AccountStore:
-    def __init__(self, data_dir: str | os.PathLike):
-        self.data_dir = Path(data_dir).expanduser()
+    def __init__(self, location: str | os.PathLike):
+        """``location`` is a folder (accounts.db plus one memory file per user) or a postgres:// URL (accounts
+        in the memlayer_accounts schema plus one schema per user)."""
+        self.location = str(location)
+        self._stores: dict[str, MemoryStore] = {}
+        if is_pg_url(self.location):
+            self.dialect = "pg"
+            self.conn = PgConnection(self.location, ACCOUNTS_SCHEMA, schema_sql="accounts_pg.sql")
+            self._lock = self.conn.lock
+            return
+        self.dialect = "sqlite"
+        self.data_dir = Path(location).expanduser()
         self.data_dir.mkdir(parents=True, exist_ok=True)
         self.conn = sqlite3.connect(self.data_dir / "accounts.db", isolation_level=None, check_same_thread=False)
         self.conn.row_factory = sqlite3.Row
@@ -127,7 +146,6 @@ class AccountStore:
         self.conn.execute("PRAGMA journal_mode = WAL")
         self.conn.executescript(SCHEMA)
         self._lock = threading.RLock()
-        self._stores: dict[str, MemoryStore] = {}
 
     def close(self) -> None:
         for s in self._stores.values():
@@ -137,13 +155,22 @@ class AccountStore:
     @contextmanager
     def _tx(self) -> Iterator[sqlite3.Connection]:
         with self._lock:
-            self.conn.execute("BEGIN IMMEDIATE")
+            if self.dialect == "pg":
+                self.conn.begin()
+            else:
+                self.conn.execute("BEGIN IMMEDIATE")
             try:
                 yield self.conn
             except BaseException:
-                self.conn.execute("ROLLBACK")
+                if self.dialect == "pg":
+                    self.conn.rollback()
+                else:
+                    self.conn.execute("ROLLBACK")
                 raise
-            self.conn.execute("COMMIT")
+            if self.dialect == "pg":
+                self.conn.commit()
+            else:
+                self.conn.execute("COMMIT")
 
     def _one(self, sql: str, *args: Any) -> sqlite3.Row | None:
         with self._lock:
@@ -152,7 +179,7 @@ class AccountStore:
     # ------------------------------------------------------------------ users
 
     def create_user(self, email: str, password: str) -> dict[str, Any]:
-        email = (email or "").strip()
+        email = (email or "").strip().lower()
         if not EMAIL_RE.match(email) or len(email) > 254:
             raise ValidationError("Enter a valid email address.")
         if len(password or "") < MIN_PASSWORD:
@@ -162,12 +189,14 @@ class AccountStore:
             with self._tx() as c:
                 c.execute("INSERT INTO users (id, email, password_hash, created_at) VALUES (?, ?, ?, ?)",
                           (user["id"], email, hash_password(password), user["created_at"]))
-        except sqlite3.IntegrityError:
-            raise ValidationError("An account with this email already exists. Sign in instead.") from None
+        except Exception as e:  # sqlite3.IntegrityError or psycopg's UniqueViolation
+            if "UNIQUE" in str(e).upper() or "unique" in type(e).__name__.lower() or "duplicate" in str(e):
+                raise ValidationError("An account with this email already exists. Sign in instead.") from None
+            raise
         return user
 
     def authenticate(self, email: str, password: str) -> dict[str, Any] | None:
-        row = self._one("SELECT * FROM users WHERE email = ?", (email or "").strip())
+        row = self._one("SELECT * FROM users WHERE email = ?", (email or "").strip().lower())
         ok = check_password(password or "", row["password_hash"] if row else _DUMMY_HASH)
         if not row or not ok or row["disabled"]:
             return None
@@ -187,18 +216,21 @@ class AccountStore:
         return self.data_dir / "users" / user_id / "memory.db"
 
     def memory_for(self, user_id: str) -> MemoryStore:
-        """The user's own memory database, opened once and reused."""
+        """The user's own memory (a file, or a Postgres schema), opened once and reused."""
+        if not re.fullmatch(r"usr_[0-9a-f]{12}", user_id):
+            raise ValidationError("bad user id")
         with self._lock:
             store = self._stores.get(user_id)
             if store is None:
-                store = self._stores[user_id] = MemoryStore(self.memory_path(user_id))
+                target = self.location if self.dialect == "pg" else self.memory_path(user_id)
+                store = self._stores[user_id] = MemoryStore(target, schema=f"u_{user_id[4:]}")
             return store
 
     # ------------------------------------------------------------ beta list
 
     def add_beta_request(self, email: str, topic: str = "") -> bool:
         """Record an invite request. Returns False if the email was already on the list."""
-        email = (email or "").strip()
+        email = (email or "").strip().lower()
         if not EMAIL_RE.match(email) or len(email) > 254:
             raise ValidationError("Enter an email address we can send the invite to.")
         with self._tx() as c:
@@ -214,7 +246,8 @@ class AccountStore:
 
     def save_client(self, client_id: str, info: dict[str, Any]) -> None:
         with self._tx() as c:
-            c.execute("INSERT OR REPLACE INTO oauth_clients (client_id, info, created_at) VALUES (?, ?, ?)",
+            c.execute("INSERT INTO oauth_clients (client_id, info, created_at) VALUES (?, ?, ?) "
+                      "ON CONFLICT (client_id) DO UPDATE SET info = excluded.info",
                       (client_id, json.dumps(info), now()))
 
     def get_client(self, client_id: str) -> dict[str, Any] | None:

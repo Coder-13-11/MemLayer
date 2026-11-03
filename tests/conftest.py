@@ -1,3 +1,6 @@
+import json
+import os
+import uuid
 from pathlib import Path
 
 import pytest
@@ -14,9 +17,22 @@ def anyio_backend():
     return "asyncio"
 
 
-@pytest.fixture
-def db_path(tmp_path):
-    return tmp_path / "memory.db"
+PG_URL = os.environ.get("MEMLAYER_TEST_PG_URL")  # e.g. postgresql://memlayer@127.0.0.1:54329/memlayer_test
+
+
+@pytest.fixture(params=["sqlite", "pg"])
+def db_path(request, tmp_path):
+    """Every store test runs on SQLite, and on Postgres too when MEMLAYER_TEST_PG_URL is set."""
+    if request.param == "sqlite":
+        yield tmp_path / "memory.db"
+        return
+    if not PG_URL:
+        pytest.skip("set MEMLAYER_TEST_PG_URL to run the Postgres variant")
+    schema = f"t_{uuid.uuid4().hex[:12]}"
+    yield f"{PG_URL}#{schema}"
+    import psycopg
+    with psycopg.connect(PG_URL, autocommit=True) as c:
+        c.execute(f'DROP SCHEMA IF EXISTS "{schema}" CASCADE')
 
 
 @pytest.fixture
@@ -37,4 +53,9 @@ def imported(store):
 
 
 def dump(store: MemoryStore) -> list[str]:
-    return list(store.conn.iterdump())
+    """Everything stored, for "this read changed nothing" checks."""
+    if store.dialect == "sqlite":
+        return list(store.conn.iterdump())
+    data = store.export()
+    data.pop("exported_at")
+    return [json.dumps(data, sort_keys=True, default=str), store.revision()]

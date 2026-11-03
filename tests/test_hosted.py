@@ -328,3 +328,35 @@ async def test_strict_discovery_and_public_client_without_secret(hosted):
             json={"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {
                 "protocolVersion": "2025-06-18", "capabilities": {}, "clientInfo": {"name": "t", "version": "1"}}})
         assert listed.status_code == 200 and "memlayer" in listed.text
+
+
+@pytest.mark.skipif(not __import__("os").environ.get("MEMLAYER_TEST_PG_URL"), reason="needs MEMLAYER_TEST_PG_URL")
+def test_accounts_on_postgres_keep_users_apart():
+    import os
+    import uuid
+
+    import psycopg
+
+    url = os.environ["MEMLAYER_TEST_PG_URL"]
+    acc = AccountStore(url)
+    a = acc.create_user(f"a-{uuid.uuid4().hex[:6]}@Example.com", "a very good password")
+    b = acc.create_user(f"b-{uuid.uuid4().hex[:6]}@example.com", "a very good password")
+    try:
+        assert acc.authenticate(a["email"].upper(), "a very good password")["id"] == a["id"]
+        with pytest.raises(Exception, match="already exists"):
+            acc.create_user(a["email"], "a very good password")
+        acc.memory_for(a["id"]).save_record("Mine", kind="finding", title="Only for A", origin_model="claude") \
+            if acc.memory_for(a["id"]).ensure_project("Mine") else None
+        assert acc.memory_for(b["id"]).list_projects() == []
+        assert acc.memory_for(b["id"]).search("Only for A")["results"] == []
+        code = acc.issue_code(a["id"], "client-x", "X", {"state": None, "scopes": ["memory"], "code_challenge": "c",
+                                                          "redirect_uri": CALLBACK, "redirect_uri_provided_explicitly": True,
+                                                          "resource": "http://x/mcp"})
+        tokens = acc.issue_tokens(acc.redeem_code(code))
+        assert acc.lookup_token(tokens["access_token"], "access")["user_id"] == a["id"]
+        assert acc.add_beta_request(f"x-{uuid.uuid4().hex[:6]}@example.com") is True
+    finally:
+        with psycopg.connect(url, autocommit=True) as c:
+            for u in (a, b):
+                c.execute(f'DROP SCHEMA IF EXISTS "u_{u["id"][4:]}" CASCADE')
+                c.execute("DELETE FROM memlayer_accounts.users WHERE id = %s", (u["id"],))

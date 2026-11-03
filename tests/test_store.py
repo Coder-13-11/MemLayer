@@ -131,7 +131,7 @@ def test_read_operations_never_modify(store, imported):
 
 def test_reads_run_query_only(store, imported):
     with store._read() as c:
-        with pytest.raises(Exception, match="readonly"):
+        with pytest.raises(Exception, match="readonly|read-only"):
             c.execute("UPDATE records SET title = 'x'")
 
 
@@ -162,7 +162,8 @@ def test_delete_and_export(store, imported, tmp_path):
         store.get_record(imported["Q1"])
     store.delete_project(PROJECT)
     assert store.list_projects() == []
-    assert store.conn.execute("SELECT count(*) FROM records_fts").fetchone()[0] == 0
+    if store.dialect == "sqlite":
+        assert store.conn.execute("SELECT count(*) FROM records_fts").fetchone()[0] == 0
 
 
 def test_possible_duplicate_flagged(store, imported):
