@@ -1,0 +1,861 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-03T02:35:19+00:00",
+  "title": "Design System: Project memory dashboard",
+  "extensions": {
+    "colorMeta": {
+      "accent": {
+        "role": "primary",
+        "displayName": "Iris",
+        "canonical": "#5b5bd6",
+        "cssVar": "--accent",
+        "tonalRamp": [
+          "oklch(15.0% 0.184 278.3)",
+          "oklch(26.4% 0.184 278.3)",
+          "oklch(37.9% 0.184 278.3)",
+          "oklch(49.3% 0.184 278.3)",
+          "oklch(60.7% 0.184 278.3)",
+          "oklch(72.1% 0.184 278.3)",
+          "oklch(83.6% 0.184 278.3)",
+          "oklch(95.0% 0.184 278.3)"
+        ],
+        "dark": "#7b7cf0"
+      },
+      "accent-hover": {
+        "role": "primary",
+        "displayName": "Deep Iris",
+        "canonical": "#4c4cc4",
+        "cssVar": "--accent-hover",
+        "tonalRamp": [
+          "oklch(15.0% 0.182 277.3)",
+          "oklch(26.4% 0.182 277.3)",
+          "oklch(37.9% 0.182 277.3)",
+          "oklch(49.3% 0.182 277.3)",
+          "oklch(60.7% 0.182 277.3)",
+          "oklch(72.1% 0.182 277.3)",
+          "oklch(83.6% 0.182 277.3)",
+          "oklch(95.0% 0.182 277.3)"
+        ],
+        "dark": "#8f90f5"
+      },
+      "accent-soft": {
+        "role": "primary",
+        "displayName": "Iris Wash",
+        "canonical": "#ededfc",
+        "cssVar": "--accent-soft",
+        "tonalRamp": [
+          "oklch(15.0% 0.02 286.0)",
+          "oklch(26.4% 0.02 286.0)",
+          "oklch(37.9% 0.02 286.0)",
+          "oklch(49.3% 0.02 286.0)",
+          "oklch(60.7% 0.02 286.0)",
+          "oklch(72.1% 0.02 286.0)",
+          "oklch(83.6% 0.02 286.0)",
+          "oklch(95.0% 0.02 286.0)"
+        ],
+        "dark": "#23234a"
+      },
+      "accent-text": {
+        "role": "primary",
+        "displayName": "Iris Ink",
+        "canonical": "#4040b0",
+        "cssVar": "--accent-text",
+        "tonalRamp": [
+          "oklch(15.0% 0.173 276.7)",
+          "oklch(26.4% 0.173 276.7)",
+          "oklch(37.9% 0.173 276.7)",
+          "oklch(49.3% 0.173 276.7)",
+          "oklch(60.7% 0.173 276.7)",
+          "oklch(72.1% 0.173 276.7)",
+          "oklch(83.6% 0.173 276.7)",
+          "oklch(95.0% 0.173 276.7)"
+        ],
+        "dark": "#b4b5ff"
+      },
+      "focus": {
+        "role": "primary",
+        "displayName": "Focus Lilac",
+        "canonical": "#8b8cf0",
+        "cssVar": "--focus",
+        "tonalRamp": [
+          "oklch(15.0% 0.145 281.4)",
+          "oklch(26.4% 0.145 281.4)",
+          "oklch(37.9% 0.145 281.4)",
+          "oklch(49.3% 0.145 281.4)",
+          "oklch(60.7% 0.145 281.4)",
+          "oklch(72.1% 0.145 281.4)",
+          "oklch(83.6% 0.145 281.4)",
+          "oklch(95.0% 0.145 281.4)"
+        ],
+        "dark": "#8b8cf0"
+      },
+      "selection": {
+        "role": "primary",
+        "displayName": "Selection Lilac",
+        "canonical": "#d9d9fb",
+        "cssVar": "--selection",
+        "tonalRamp": [
+          "oklch(15.0% 0.046 285.4)",
+          "oklch(26.4% 0.046 285.4)",
+          "oklch(37.9% 0.046 285.4)",
+          "oklch(49.3% 0.046 285.4)",
+          "oklch(60.7% 0.046 285.4)",
+          "oklch(72.1% 0.046 285.4)",
+          "oklch(83.6% 0.046 285.4)",
+          "oklch(95.0% 0.046 285.4)"
+        ],
+        "dark": "#33346a"
+      },
+      "bg": {
+        "role": "neutral",
+        "displayName": "Graphite Paper",
+        "canonical": "#fbfbfc",
+        "cssVar": "--bg",
+        "tonalRamp": [
+          "oklch(15.0% 0.001 286.4)",
+          "oklch(26.4% 0.001 286.4)",
+          "oklch(37.9% 0.001 286.4)",
+          "oklch(49.3% 0.001 286.4)",
+          "oklch(60.7% 0.001 286.4)",
+          "oklch(72.1% 0.001 286.4)",
+          "oklch(83.6% 0.001 286.4)",
+          "oklch(95.0% 0.001 286.4)"
+        ],
+        "dark": "#111217"
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Sheet",
+        "canonical": "#ffffff",
+        "cssVar": "--surface",
+        "tonalRamp": [
+          "oklch(15.0% 0.0 89.9)",
+          "oklch(26.4% 0.0 89.9)",
+          "oklch(37.9% 0.0 89.9)",
+          "oklch(49.3% 0.0 89.9)",
+          "oklch(60.7% 0.0 89.9)",
+          "oklch(72.1% 0.0 89.9)",
+          "oklch(83.6% 0.0 89.9)",
+          "oklch(95.0% 0.0 89.9)"
+        ],
+        "dark": "#16171d"
+      },
+      "sidebar": {
+        "role": "neutral",
+        "displayName": "Indigo Graphite",
+        "canonical": "#f2f2f7",
+        "cssVar": "--sidebar",
+        "tonalRamp": [
+          "oklch(15.0% 0.007 286.3)",
+          "oklch(26.4% 0.007 286.3)",
+          "oklch(37.9% 0.007 286.3)",
+          "oklch(49.3% 0.007 286.3)",
+          "oklch(60.7% 0.007 286.3)",
+          "oklch(72.1% 0.007 286.3)",
+          "oklch(83.6% 0.007 286.3)",
+          "oklch(95.0% 0.007 286.3)"
+        ],
+        "dark": "#0c0d11"
+      },
+      "sidebar-hover": {
+        "role": "neutral",
+        "displayName": "Indigo Graphite Hover",
+        "canonical": "#e8e8f0",
+        "cssVar": "--sidebar-hover",
+        "tonalRamp": [
+          "oklch(15.0% 0.011 286.2)",
+          "oklch(26.4% 0.011 286.2)",
+          "oklch(37.9% 0.011 286.2)",
+          "oklch(49.3% 0.011 286.2)",
+          "oklch(60.7% 0.011 286.2)",
+          "oklch(72.1% 0.011 286.2)",
+          "oklch(83.6% 0.011 286.2)",
+          "oklch(95.0% 0.011 286.2)"
+        ],
+        "dark": "#1a1b22"
+      },
+      "sidebar-active": {
+        "role": "neutral",
+        "displayName": "Indigo Graphite Active",
+        "canonical": "#e2e2ee",
+        "cssVar": "--sidebar-active",
+        "tonalRamp": [
+          "oklch(15.0% 0.016 286.1)",
+          "oklch(26.4% 0.016 286.1)",
+          "oklch(37.9% 0.016 286.1)",
+          "oklch(49.3% 0.016 286.1)",
+          "oklch(60.7% 0.016 286.1)",
+          "oklch(72.1% 0.016 286.1)",
+          "oklch(83.6% 0.016 286.1)",
+          "oklch(95.0% 0.016 286.1)"
+        ],
+        "dark": "#22232c"
+      },
+      "hover": {
+        "role": "neutral",
+        "displayName": "Hover Mist",
+        "canonical": "#f4f4f7",
+        "cssVar": "--hover",
+        "tonalRamp": [
+          "oklch(15.0% 0.004 286.3)",
+          "oklch(26.4% 0.004 286.3)",
+          "oklch(37.9% 0.004 286.3)",
+          "oklch(49.3% 0.004 286.3)",
+          "oklch(60.7% 0.004 286.3)",
+          "oklch(72.1% 0.004 286.3)",
+          "oklch(83.6% 0.004 286.3)",
+          "oklch(95.0% 0.004 286.3)"
+        ],
+        "dark": "#1c1d24"
+      },
+      "border": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "#e6e6ec",
+        "cssVar": "--border",
+        "tonalRamp": [
+          "oklch(15.0% 0.008 286.2)",
+          "oklch(26.4% 0.008 286.2)",
+          "oklch(37.9% 0.008 286.2)",
+          "oklch(49.3% 0.008 286.2)",
+          "oklch(60.7% 0.008 286.2)",
+          "oklch(72.1% 0.008 286.2)",
+          "oklch(83.6% 0.008 286.2)",
+          "oklch(95.0% 0.008 286.2)"
+        ],
+        "dark": "#25262e"
+      },
+      "border-strong": {
+        "role": "neutral",
+        "displayName": "Firm Hairline",
+        "canonical": "#d6d6de",
+        "cssVar": "--border-strong",
+        "tonalRamp": [
+          "oklch(15.0% 0.011 286.2)",
+          "oklch(26.4% 0.011 286.2)",
+          "oklch(37.9% 0.011 286.2)",
+          "oklch(49.3% 0.011 286.2)",
+          "oklch(60.7% 0.011 286.2)",
+          "oklch(72.1% 0.011 286.2)",
+          "oklch(83.6% 0.011 286.2)",
+          "oklch(95.0% 0.011 286.2)"
+        ],
+        "dark": "#33343e"
+      },
+      "text": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "#1b1c22",
+        "cssVar": "--text",
+        "tonalRamp": [
+          "oklch(15.0% 0.012 278.0)",
+          "oklch(26.4% 0.012 278.0)",
+          "oklch(37.9% 0.012 278.0)",
+          "oklch(49.3% 0.012 278.0)",
+          "oklch(60.7% 0.012 278.0)",
+          "oklch(72.1% 0.012 278.0)",
+          "oklch(83.6% 0.012 278.0)",
+          "oklch(95.0% 0.012 278.0)"
+        ],
+        "dark": "#e9e9ee"
+      },
+      "text-2": {
+        "role": "neutral",
+        "displayName": "Graphite",
+        "canonical": "#565968",
+        "cssVar": "--text-2",
+        "tonalRamp": [
+          "oklch(15.0% 0.025 276.5)",
+          "oklch(26.4% 0.025 276.5)",
+          "oklch(37.9% 0.025 276.5)",
+          "oklch(49.3% 0.025 276.5)",
+          "oklch(60.7% 0.025 276.5)",
+          "oklch(72.1% 0.025 276.5)",
+          "oklch(83.6% 0.025 276.5)",
+          "oklch(95.0% 0.025 276.5)"
+        ],
+        "dark": "#a7a9b6"
+      },
+      "text-3": {
+        "role": "neutral",
+        "displayName": "Pewter",
+        "canonical": "#6c6f7e",
+        "cssVar": "--text-3",
+        "tonalRamp": [
+          "oklch(15.0% 0.024 276.6)",
+          "oklch(26.4% 0.024 276.6)",
+          "oklch(37.9% 0.024 276.6)",
+          "oklch(49.3% 0.024 276.6)",
+          "oklch(60.7% 0.024 276.6)",
+          "oklch(72.1% 0.024 276.6)",
+          "oklch(83.6% 0.024 276.6)",
+          "oklch(95.0% 0.024 276.6)"
+        ],
+        "dark": "#8c8e9c"
+      },
+      "st-supported": {
+        "role": "secondary",
+        "displayName": "Verified Green",
+        "canonical": "#2e8a57",
+        "cssVar": "--st-supported",
+        "tonalRamp": [
+          "oklch(15.0% 0.117 155.2)",
+          "oklch(26.4% 0.117 155.2)",
+          "oklch(37.9% 0.117 155.2)",
+          "oklch(49.3% 0.117 155.2)",
+          "oklch(60.7% 0.117 155.2)",
+          "oklch(72.1% 0.117 155.2)",
+          "oklch(83.6% 0.117 155.2)",
+          "oklch(95.0% 0.117 155.2)"
+        ],
+        "dark": "#4cb57d"
+      },
+      "st-unverified": {
+        "role": "secondary",
+        "displayName": "Slate",
+        "canonical": "#8a8d9b",
+        "cssVar": "--st-unverified",
+        "tonalRamp": [
+          "oklch(15.0% 0.021 276.2)",
+          "oklch(26.4% 0.021 276.2)",
+          "oklch(37.9% 0.021 276.2)",
+          "oklch(49.3% 0.021 276.2)",
+          "oklch(60.7% 0.021 276.2)",
+          "oklch(72.1% 0.021 276.2)",
+          "oklch(83.6% 0.021 276.2)",
+          "oklch(95.0% 0.021 276.2)"
+        ],
+        "dark": "#858897"
+      },
+      "st-challenged": {
+        "role": "secondary",
+        "displayName": "Amber",
+        "canonical": "#c27c0e",
+        "cssVar": "--st-challenged",
+        "tonalRamp": [
+          "oklch(15.0% 0.137 69.5)",
+          "oklch(26.4% 0.137 69.5)",
+          "oklch(37.9% 0.137 69.5)",
+          "oklch(49.3% 0.137 69.5)",
+          "oklch(60.7% 0.137 69.5)",
+          "oklch(72.1% 0.137 69.5)",
+          "oklch(83.6% 0.137 69.5)",
+          "oklch(95.0% 0.137 69.5)"
+        ],
+        "dark": "#e0a03a"
+      },
+      "st-contradicted": {
+        "role": "secondary",
+        "displayName": "Signal Red",
+        "canonical": "#d0423f",
+        "cssVar": "--st-contradicted",
+        "tonalRamp": [
+          "oklch(15.0% 0.179 25.7)",
+          "oklch(26.4% 0.179 25.7)",
+          "oklch(37.9% 0.179 25.7)",
+          "oklch(49.3% 0.179 25.7)",
+          "oklch(60.7% 0.179 25.7)",
+          "oklch(72.1% 0.179 25.7)",
+          "oklch(83.6% 0.179 25.7)",
+          "oklch(95.0% 0.179 25.7)"
+        ],
+        "dark": "#ec6662"
+      },
+      "st-superseded": {
+        "role": "secondary",
+        "displayName": "Ash",
+        "canonical": "#b3b5c0",
+        "cssVar": "--st-superseded",
+        "tonalRamp": [
+          "oklch(15.0% 0.016 277.8)",
+          "oklch(26.4% 0.016 277.8)",
+          "oklch(37.9% 0.016 277.8)",
+          "oklch(49.3% 0.016 277.8)",
+          "oklch(60.7% 0.016 277.8)",
+          "oklch(72.1% 0.016 277.8)",
+          "oklch(83.6% 0.016 277.8)",
+          "oklch(95.0% 0.016 277.8)"
+        ],
+        "dark": "#5a5c68"
+      },
+      "st-resolved": {
+        "role": "secondary",
+        "displayName": "Answer Blue",
+        "canonical": "#3a7fc1",
+        "cssVar": "--st-resolved",
+        "tonalRamp": [
+          "oklch(15.0% 0.123 249.9)",
+          "oklch(26.4% 0.123 249.9)",
+          "oklch(37.9% 0.123 249.9)",
+          "oklch(49.3% 0.123 249.9)",
+          "oklch(60.7% 0.123 249.9)",
+          "oklch(72.1% 0.123 249.9)",
+          "oklch(83.6% 0.123 249.9)",
+          "oklch(95.0% 0.123 249.9)"
+        ],
+        "dark": "#5ea2e6"
+      },
+      "st-retracted": {
+        "role": "secondary",
+        "displayName": "Faded Slate",
+        "canonical": "#9a9cab",
+        "cssVar": "--st-retracted",
+        "tonalRamp": [
+          "oklch(15.0% 0.022 279.8)",
+          "oklch(26.4% 0.022 279.8)",
+          "oklch(37.9% 0.022 279.8)",
+          "oklch(49.3% 0.022 279.8)",
+          "oklch(60.7% 0.022 279.8)",
+          "oklch(72.1% 0.022 279.8)",
+          "oklch(83.6% 0.022 279.8)",
+          "oklch(95.0% 0.022 279.8)"
+        ],
+        "dark": "#6c6e7c"
+      },
+      "kind-objective": {
+        "role": "tertiary",
+        "displayName": "Kind: Objective",
+        "canonical": "#5b5bd6",
+        "tonalRamp": [
+          "oklch(15.0% 0.184 278.3)",
+          "oklch(26.4% 0.184 278.3)",
+          "oklch(37.9% 0.184 278.3)",
+          "oklch(49.3% 0.184 278.3)",
+          "oklch(60.7% 0.184 278.3)",
+          "oklch(72.1% 0.184 278.3)",
+          "oklch(83.6% 0.184 278.3)",
+          "oklch(95.0% 0.184 278.3)"
+        ],
+        "note": "Defined in js/dom.js KIND, not a CSS custom property; no dark variant in the build."
+      },
+      "kind-finding": {
+        "role": "tertiary",
+        "displayName": "Kind: Finding",
+        "canonical": "#2f8fa8",
+        "tonalRamp": [
+          "oklch(15.0% 0.094 218.9)",
+          "oklch(26.4% 0.094 218.9)",
+          "oklch(37.9% 0.094 218.9)",
+          "oklch(49.3% 0.094 218.9)",
+          "oklch(60.7% 0.094 218.9)",
+          "oklch(72.1% 0.094 218.9)",
+          "oklch(83.6% 0.094 218.9)",
+          "oklch(95.0% 0.094 218.9)"
+        ],
+        "note": "Defined in js/dom.js KIND, not a CSS custom property; no dark variant in the build."
+      },
+      "kind-decision": {
+        "role": "tertiary",
+        "displayName": "Kind: Decision",
+        "canonical": "#8e4ec6",
+        "tonalRamp": [
+          "oklch(15.0% 0.183 305.9)",
+          "oklch(26.4% 0.183 305.9)",
+          "oklch(37.9% 0.183 305.9)",
+          "oklch(49.3% 0.183 305.9)",
+          "oklch(60.7% 0.183 305.9)",
+          "oklch(72.1% 0.183 305.9)",
+          "oklch(83.6% 0.183 305.9)",
+          "oklch(95.0% 0.183 305.9)"
+        ],
+        "note": "Defined in js/dom.js KIND, not a CSS custom property; no dark variant in the build."
+      },
+      "kind-assumption": {
+        "role": "tertiary",
+        "displayName": "Kind: Assumption",
+        "canonical": "#c27c0e",
+        "tonalRamp": [
+          "oklch(15.0% 0.137 69.5)",
+          "oklch(26.4% 0.137 69.5)",
+          "oklch(37.9% 0.137 69.5)",
+          "oklch(49.3% 0.137 69.5)",
+          "oklch(60.7% 0.137 69.5)",
+          "oklch(72.1% 0.137 69.5)",
+          "oklch(83.6% 0.137 69.5)",
+          "oklch(95.0% 0.137 69.5)"
+        ],
+        "note": "Defined in js/dom.js KIND, not a CSS custom property; no dark variant in the build."
+      },
+      "kind-hypothesis": {
+        "role": "tertiary",
+        "displayName": "Kind: Hypothesis",
+        "canonical": "#d0743f",
+        "tonalRamp": [
+          "oklch(15.0% 0.134 48.7)",
+          "oklch(26.4% 0.134 48.7)",
+          "oklch(37.9% 0.134 48.7)",
+          "oklch(49.3% 0.134 48.7)",
+          "oklch(60.7% 0.134 48.7)",
+          "oklch(72.1% 0.134 48.7)",
+          "oklch(83.6% 0.134 48.7)",
+          "oklch(95.0% 0.134 48.7)"
+        ],
+        "note": "Defined in js/dom.js KIND, not a CSS custom property; no dark variant in the build."
+      },
+      "kind-evidence": {
+        "role": "tertiary",
+        "displayName": "Kind: Evidence",
+        "canonical": "#2e8a57",
+        "tonalRamp": [
+          "oklch(15.0% 0.117 155.2)",
+          "oklch(26.4% 0.117 155.2)",
+          "oklch(37.9% 0.117 155.2)",
+          "oklch(49.3% 0.117 155.2)",
+          "oklch(60.7% 0.117 155.2)",
+          "oklch(72.1% 0.117 155.2)",
+          "oklch(83.6% 0.117 155.2)",
+          "oklch(95.0% 0.117 155.2)"
+        ],
+        "note": "Defined in js/dom.js KIND, not a CSS custom property; no dark variant in the build."
+      },
+      "kind-question": {
+        "role": "tertiary",
+        "displayName": "Kind: Question",
+        "canonical": "#d6409f",
+        "tonalRamp": [
+          "oklch(15.0% 0.208 346.0)",
+          "oklch(26.4% 0.208 346.0)",
+          "oklch(37.9% 0.208 346.0)",
+          "oklch(49.3% 0.208 346.0)",
+          "oklch(60.7% 0.208 346.0)",
+          "oklch(72.1% 0.208 346.0)",
+          "oklch(83.6% 0.208 346.0)",
+          "oklch(95.0% 0.208 346.0)"
+        ],
+        "note": "Defined in js/dom.js KIND, not a CSS custom property; no dark variant in the build."
+      },
+      "kind-task": {
+        "role": "tertiary",
+        "displayName": "Kind: Task",
+        "canonical": "#6b7280",
+        "tonalRamp": [
+          "oklch(15.0% 0.023 264.4)",
+          "oklch(26.4% 0.023 264.4)",
+          "oklch(37.9% 0.023 264.4)",
+          "oklch(49.3% 0.023 264.4)",
+          "oklch(60.7% 0.023 264.4)",
+          "oklch(72.1% 0.023 264.4)",
+          "oklch(83.6% 0.023 264.4)",
+          "oklch(95.0% 0.023 264.4)"
+        ],
+        "note": "Defined in js/dom.js KIND, not a CSS custom property; no dark variant in the build."
+      },
+      "kind-note": {
+        "role": "tertiary",
+        "displayName": "Kind: Note",
+        "canonical": "#8a8d9b",
+        "tonalRamp": [
+          "oklch(15.0% 0.021 276.2)",
+          "oklch(26.4% 0.021 276.2)",
+          "oklch(37.9% 0.021 276.2)",
+          "oklch(49.3% 0.021 276.2)",
+          "oklch(60.7% 0.021 276.2)",
+          "oklch(72.1% 0.021 276.2)",
+          "oklch(83.6% 0.021 276.2)",
+          "oklch(95.0% 0.021 276.2)"
+        ],
+        "note": "Defined in js/dom.js KIND, not a CSS custom property; no dark variant in the build."
+      }
+    },
+    "severityAliases": {
+      "sev-high": "st-contradicted",
+      "sev-medium": "st-challenged",
+      "sev-low": "st-unverified"
+    },
+    "modelHues": {
+      "hues": [
+        250,
+        190,
+        145,
+        30,
+        330,
+        280,
+        95,
+        210
+      ],
+      "hash": "n = n*31 + charCode over lowercase name, uint32; hue = hues[n % 8]",
+      "light": {
+        "bg": "hsl(h 60% 94%)",
+        "fg": "hsl(h 55% 32%)"
+      },
+      "dark": {
+        "bg": "hsl(h 35% 20%)",
+        "fg": "hsl(h 70% 78%)"
+      },
+      "neutral": {
+        "bg": "var(--hover)",
+        "fg": "var(--text-2)",
+        "for": [
+          "human",
+          "unknown"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Page titles only."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Record title in the detail panel."
+      },
+      "title-sm": {
+        "displayName": "Title small",
+        "purpose": "Trust caption figure, Connect headings."
+      },
+      "section": {
+        "displayName": "Section",
+        "purpose": "Section headings over a hairline rule; sentence case."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Default UI and content text."
+      },
+      "body-sm": {
+        "displayName": "Body small",
+        "purpose": "Provenance, evidence, relations, legends, toasts."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Field labels, table headers, meta, counts."
+      },
+      "mono": {
+        "displayName": "Mono",
+        "purpose": "Record ids, key hints, verbatim source text, code."
+      }
+    },
+    "shadows": [
+      {
+        "name": "shadow-panel",
+        "value": "-12px 0 32px -12px rgba(24, 24, 40, .18)",
+        "dark": "-16px 0 40px -12px rgba(0, 0, 0, .6)",
+        "purpose": "Record drawer edge."
+      },
+      {
+        "name": "shadow-pop",
+        "value": "0 18px 48px -12px rgba(24, 24, 40, .28), 0 2px 6px rgba(24, 24, 40, .06)",
+        "dark": "0 24px 64px -12px rgba(0, 0, 0, .7)",
+        "purpose": "Floating overlays: palette, graph tooltip, toasts."
+      }
+    ],
+    "focus": [
+      {
+        "name": "focus-outline",
+        "value": "2px solid var(--focus); outline-offset: 2px",
+        "purpose": "All :focus-visible."
+      },
+      {
+        "name": "input-focus-ring",
+        "value": "border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft)",
+        "purpose": "Text inputs, selects, textareas."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease",
+        "value": "cubic-bezier(.16, 1, .3, 1)",
+        "purpose": "Shared decelerating ease for arrivals."
+      },
+      {
+        "name": "panel-in",
+        "value": "280ms, from opacity .4 translateX(24px)",
+        "purpose": "Record drawer."
+      },
+      {
+        "name": "pop",
+        "value": "200ms, from translateY(-6px) scale(.985) opacity 0",
+        "purpose": "Command palette."
+      },
+      {
+        "name": "toast-in",
+        "value": "300ms, from translateY(10px) opacity 0",
+        "purpose": "Toasts."
+      },
+      {
+        "name": "fresh",
+        "value": "2.4s, accent-soft to transparent",
+        "purpose": "Live-arrived activity row."
+      },
+      {
+        "name": "state",
+        "value": "150ms background/border-color",
+        "purpose": "Button and trust segment hover."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "all durations .01ms",
+        "purpose": "prefers-reduced-motion."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "panel-overlay",
+        "value": "1180px",
+        "purpose": "Panel becomes fixed overlay; columns stack."
+      },
+      {
+        "name": "compact",
+        "value": "820px",
+        "purpose": "Sidebar hidden; topbar scrolls; labels hidden."
+      }
+    ],
+    "layout": {
+      "sidebar": "248px",
+      "panel": "480px",
+      "topbar": "48px",
+      "contentMax": "1120px",
+      "contentPadding": "28px 40px 64px"
+    },
+    "icons": {
+      "grid": "16px viewBox",
+      "stroke": "1.6, round caps and joins, currentColor, no fill",
+      "source": "memlayer/static/js/dom.js PATHS"
+    }
+  },
+  "components": [
+    {
+      "name": "Button",
+      "kind": "button",
+      "refersTo": "button",
+      "description": "Default outlined action; most actions in a view.",
+      "html": "<button class=\"ds-btn\"><svg viewBox=\"0 0 16 16\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M3.5 8.5 6.5 11.5 12.5 4.5\"/></svg>Mark verified</button>",
+      "css": ".ds-btn{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 11px;border-radius:var(--radius-sm,6px);border:1px solid var(--border,#e6e6ec);background:var(--surface,#fff);color:var(--text,#1b1c22);font:14px/1.5 var(--font, -apple-system, BlinkMacSystemFont, system-ui, sans-serif);cursor:pointer;transition:background .15s,border-color .15s}.ds-btn:hover{background:var(--hover,#f4f4f7);border-color:var(--border-strong,#d6d6de)}.ds-btn:focus-visible{outline:2px solid var(--focus,#8b8cf0);outline-offset:2px}"
+    },
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The single primary action in a context (Import, Create project).",
+      "html": "<button class=\"ds-btn-primary\"><svg viewBox=\"0 0 16 16\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M8 2.5v8M5 7.5l3 3 3-3M3 12.5v1h10v-1\"/></svg>Import</button>",
+      "css": ".ds-btn-primary{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 11px;border-radius:var(--radius-sm,6px);border:1px solid var(--accent,#5b5bd6);background:var(--accent,#5b5bd6);color:#fff;font:14px/1.5 var(--font, -apple-system, BlinkMacSystemFont, system-ui, sans-serif);cursor:pointer;transition:background .15s}.ds-btn-primary:hover{background:var(--accent-hover,#4c4cc4)}.ds-btn-primary:focus-visible{outline:2px solid var(--focus,#8b8cf0);outline-offset:2px}"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Low-emphasis action in panel headers and toolbars.",
+      "html": "<button class=\"ds-btn-ghost\"><svg viewBox=\"0 0 16 16\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M10.5 3 13 5.5 6 12.5H3.5V10z\"/></svg>Edit</button>",
+      "css": ".ds-btn-ghost{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 11px;border-radius:var(--radius-sm,6px);border:1px solid transparent;background:none;color:var(--text-2,#565968);font:14px/1.5 var(--font, -apple-system, BlinkMacSystemFont, system-ui, sans-serif);cursor:pointer;transition:background .15s}.ds-btn-ghost:hover{background:var(--hover,#f4f4f7);color:var(--text,#1b1c22)}.ds-btn-ghost:focus-visible{outline:2px solid var(--focus,#8b8cf0);outline-offset:2px}"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Labelled field; iris border and wash ring on focus.",
+      "html": "<label class=\"ds-field\"><span>Evidence URL</span><input class=\"ds-input\" placeholder=\"https://…\"></label>",
+      "css": ".ds-field{display:flex;flex-direction:column;gap:5px;font:14px/1.5 var(--font, -apple-system, BlinkMacSystemFont, system-ui, sans-serif);}.ds-field>span{font-size:12px;font-weight:500;color:var(--text-2,#565968)}.ds-input{font:inherit;min-height:32px;padding:6px 9px;border-radius:var(--radius-sm,6px);border:1px solid var(--border,#e6e6ec);background:var(--surface,#fff);color:var(--text,#1b1c22)}.ds-input::placeholder{color:var(--text-3,#6c6f7e)}.ds-input:hover{border-color:var(--border-strong,#d6d6de)}.ds-input:focus{outline:none;border-color:var(--accent,#5b5bd6);box-shadow:0 0 0 3px var(--accent-soft,#ededfc)}"
+    },
+    {
+      "name": "Sidebar Navigation",
+      "kind": "nav",
+      "refersTo": "nav-item",
+      "description": "Indigo-graphite column: nav rows with project trust bars.",
+      "html": "<nav class=\"ds-side\"><a class=\"ds-nav\" href=\"#\"><svg viewBox=\"0 0 16 16\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M3 7.5 8 3.5l5 4V13H9.5V9.5h-3V13H3z\"/></svg><span class=\"ds-l\">Home</span></a><div class=\"ds-sec\">Projects</div><a class=\"ds-nav ds-on\" href=\"#\"><span class=\"ds-l\">Environmental AI Research</span><span class=\"ds-mini\"><i style=\"flex:6;background:var(--st-supported,#2e8a57)\"></i><i style=\"flex:5;background:var(--st-unverified,#8a8d9b)\"></i><i style=\"flex:2;background:var(--st-challenged,#c27c0e)\"></i><i style=\"flex:1;background:var(--st-contradicted,#d0423f)\"></i></span></a><a class=\"ds-nav\" href=\"#\"><span class=\"ds-l\">Battery chemistry</span></a></nav>",
+      "css": ".ds-side{width:248px;background:var(--sidebar,#f2f2f7);padding:12px 8px;display:flex;flex-direction:column;gap:2px;font:14px/1.5 var(--font, -apple-system, BlinkMacSystemFont, system-ui, sans-serif);}.ds-nav{display:flex;align-items:center;gap:9px;padding:5px 8px;min-height:30px;border-radius:var(--radius-sm,6px);color:var(--text-2,#565968);text-decoration:none}.ds-nav:hover{background:var(--sidebar-hover,#e8e8f0);color:var(--text,#1b1c22)}.ds-nav.ds-on{background:var(--sidebar-active,#e2e2ee);color:var(--text,#1b1c22);font-weight:500}.ds-nav:focus-visible{outline:2px solid var(--focus,#8b8cf0);outline-offset:2px}.ds-l{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ds-sec{padding:16px 8px 4px;color:var(--text-3,#6c6f7e);font-size:12px;font-weight:500}.ds-mini{display:flex;gap:2px;width:36px;height:8px;border-radius:4px;overflow:hidden;background:var(--border,#e6e6ec)}.ds-mini i{display:block;min-width:3px}"
+    },
+    {
+      "name": "Status Pill",
+      "kind": "chip",
+      "refersTo": "status-pill",
+      "description": "Record status; dashed ring for unverified, strike for superseded.",
+      "html": "<div class=\"ds-row\"><span class=\"ds-pill\"><i style=\"background:var(--st-supported,#2e8a57)\"></i>Evidence-supported</span><span class=\"ds-pill\"><i class=\"ds-dash\"></i>Unverified</span><span class=\"ds-pill\"><i style=\"background:var(--st-challenged,#c27c0e)\"></i>Challenged</span><span class=\"ds-pill ds-sup\"><i style=\"background:var(--st-superseded,#b3b5c0)\"></i>Superseded</span></div>",
+      "css": ".ds-row{display:flex;gap:6px;flex-wrap:wrap;font:14px/1.5 var(--font, -apple-system, BlinkMacSystemFont, system-ui, sans-serif);}.ds-pill{display:inline-flex;align-items:center;gap:6px;padding:1px 8px 1px 6px;border-radius:99px;font-size:12px;line-height:18px;border:1px solid var(--border,#e6e6ec);background:var(--surface,#fff);color:var(--text-2,#565968)}.ds-pill i{width:7px;height:7px;border-radius:50%}.ds-pill i.ds-dash{width:8px;height:8px;border:1.5px dashed var(--st-unverified,#8a8d9b);box-sizing:border-box}.ds-pill.ds-sup{text-decoration:line-through;color:var(--text-3,#6c6f7e)}"
+    },
+    {
+      "name": "Model Chip",
+      "kind": "chip",
+      "description": "Origin model, hue hashed from the name (light-mode formula shown).",
+      "html": "<div class=\"ds-row\"><span class=\"ds-chip\" style=\"background:hsl(250 60% 94%);color:hsl(250 55% 32%)\">claude</span><span class=\"ds-chip\" style=\"background:hsl(145 60% 94%);color:hsl(145 55% 32%)\">chatgpt</span><span class=\"ds-chip ds-human\">human</span></div>",
+      "css": ".ds-row{display:flex;gap:6px;font:14px/1.5 var(--font, -apple-system, BlinkMacSystemFont, system-ui, sans-serif);}.ds-chip{display:inline-flex;align-items:center;padding:0 7px;border-radius:5px;font-size:12px;line-height:20px;font-weight:500}.ds-chip.ds-human{background:var(--hover,#f4f4f7);color:var(--text-2,#565968)}"
+    },
+    {
+      "name": "Trust Bar",
+      "kind": "custom",
+      "refersTo": "trust-bar-lg",
+      "description": "Signature: segmented status bar with clickable legend; filters records.",
+      "html": "<div class=\"ds-trust-wrap\"><div class=\"ds-cap\"><b>42%</b> evidence-supported</div><div class=\"ds-trust\"><span style=\"flex:10;background:var(--st-supported,#2e8a57)\"></span><span style=\"flex:8;background:var(--st-unverified,#8a8d9b)\"></span><span style=\"flex:3;background:var(--st-challenged,#c27c0e)\"></span><span style=\"flex:2;background:var(--st-contradicted,#d0423f)\"></span><span style=\"flex:1;background:var(--st-superseded,#b3b5c0)\"></span></div><div class=\"ds-leg\"><button><i style=\"background:var(--st-supported,#2e8a57)\"></i><b>10</b> Evidence-supported</button><button><i style=\"background:var(--st-unverified,#8a8d9b)\"></i><b>8</b> Unverified</button><button><i style=\"background:var(--st-challenged,#c27c0e)\"></i><b>3</b> Challenged</button><button><i style=\"background:var(--st-contradicted,#d0423f)\"></i><b>2</b> Contradicted</button></div></div>",
+      "css": ".ds-trust-wrap{font:14px/1.5 var(--font, -apple-system, BlinkMacSystemFont, system-ui, sans-serif);font-variant-numeric:tabular-nums}.ds-cap{font-size:15px;margin-bottom:10px;color:var(--text-2,#565968)}.ds-cap b{font-weight:600;color:var(--text,#1b1c22)}.ds-trust{display:flex;gap:2px;height:12px;border-radius:6px;overflow:hidden;background:var(--border,#e6e6ec)}.ds-trust span{display:block;min-width:3px;cursor:pointer;transition:filter .15s}.ds-trust span:hover{filter:brightness(1.12)}.ds-leg{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:10px;font-size:13px}.ds-leg button{all:unset;display:flex;align-items:center;gap:7px;cursor:pointer;color:var(--text-2,#565968)}.ds-leg button:hover{color:var(--text,#1b1c22)}.ds-leg button:focus-visible{outline:2px solid var(--focus,#8b8cf0);outline-offset:2px}.ds-leg i{width:8px;height:8px;border-radius:2px}.ds-leg b{font-weight:600;color:var(--text,#1b1c22)}"
+    },
+    {
+      "name": "List Row",
+      "kind": "card",
+      "refersTo": "list-row",
+      "description": "Hairline-ruled row with kind tag, title, pill and tabular meta.",
+      "html": "<ul class=\"ds-list\"><li><button class=\"ds-lrow\"><span class=\"ds-kind\"><i style=\"background:#2f8fa8\"></i>Finding</span><span class=\"ds-t\">Sentinel-2 NDVI tracks canopy loss within 5%</span><span class=\"ds-meta\">2h ago</span></button></li><li><button class=\"ds-lrow\"><span class=\"ds-kind\"><i style=\"background:#c27c0e\"></i>Assumption</span><span class=\"ds-t\">Cloud masking is adequate for the tropics</span><span class=\"ds-meta\">3d ago</span></button></li></ul>",
+      "css": ".ds-list{list-style:none;margin:0;padding:0;font:14px/1.5 var(--font, -apple-system, BlinkMacSystemFont, system-ui, sans-serif);}.ds-list li{border-bottom:1px solid var(--border,#e6e6ec)}.ds-lrow{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:12px;width:100%;padding:9px 8px;border-radius:var(--radius-sm,6px);cursor:pointer;color:var(--text,#1b1c22)}.ds-lrow:hover{background:var(--hover,#f4f4f7)}.ds-lrow:focus-visible{outline:2px solid var(--focus,#8b8cf0);outline-offset:2px}.ds-kind{display:inline-flex;align-items:center;gap:6px;color:var(--text-2,#565968);font-size:12px;white-space:nowrap}.ds-kind i{width:8px;height:8px;border-radius:2px}.ds-t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ds-meta{color:var(--text-3,#6c6f7e);font-size:12px;font-variant-numeric:tabular-nums}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Provenance Ledger",
+    "overview": "A calm, dense workbench in the Notion-meets-Linear category, built so that the first thing anyone sees about a claim is its standing: its verification status, which model wrote it, and what evidence backs it. The surface is cool graphite paper with a faintly indigo-tinted sidebar. Nearly everything is neutral. Colour is spent only where it carries meaning: status, record kind, origin model, and the single iris accent for selection, focus and the primary action.\n\nDensity is high and quiet. Lists are hairline-ruled rows, not cards; sections are announced by a small bold heading over a 1px rule; numbers are tabular. Depth comes from tone (sidebar darker than canvas, surface lighter than canvas) and 1px borders. Only two things cast a shadow: the record panel sliding in from the right, and overlays (command palette, tooltip, toast). Motion is brief and decelerating, and it only marks arrivals: the panel, the palette, toasts, and a fading tint on activity rows that just arrived live.\n\nBoth themes are first-class. Light is the `:root` default; dark applies through `prefers-color-scheme` unless the page is pinned with `data-theme`, and every neutral, accent and status token has a dark counterpart. The product name is a configurable string and the mark is a generic layers glyph on the accent. No identity in this system depends on the name.",
+    "keyCharacteristics": [
+      "Cool graphite neutrals, one iris accent, and colour that always encodes something.",
+      "Status before content: every record surface carries a status pill or ring.",
+      "Hairline rows and tonal layering; no card grids, no nested cards.",
+      "System UI type at 14px with tabular numerals; mono for ids, key hints and verbatim source text.",
+      "The trust bar, a segmented bar of record statuses, is the signature and appears at two sizes.",
+      "Dashed means uncertain; struck through means no longer current."
+    ],
+    "rules": [
+      {
+        "name": "The Colour Does Jobs Rule",
+        "body": "Every hue on screen encodes status, kind, origin model, or selection. A colour that only decorates does not ship.",
+        "section": "colors"
+      },
+      {
+        "name": "The Iris Is Selection Rule",
+        "body": "Iris is used for selection, focus, links and the one primary action in a view. It is never a status and never decoration.",
+        "section": "colors"
+      },
+      {
+        "name": "The Neutral Models Rule",
+        "body": "Origin-model colours come from a hash of the name, using one fixed lightness and chroma for every model. No provider gets a brand colour or a privileged hue.",
+        "section": "colors"
+      },
+      {
+        "name": "The Tabular Rule",
+        "body": "Every count, date, version and statistic uses `font-variant-numeric: tabular-nums`, so columns of figures line up.",
+        "section": "typography"
+      },
+      {
+        "name": "The Verbatim Is Mono Rule",
+        "body": "Mono is used for things that are literally what they are: ids, keys, commands and imported source text. It is never used for UI prose.",
+        "section": "typography"
+      },
+      {
+        "name": "The Two Shadows Rule",
+        "body": "Only the record drawer and floating overlays cast a shadow. Rows, sections, buttons and inline boxes stay flat.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Hairline Rule",
+        "body": "Structure is drawn with 1px border lines and changes of tone. Lists are ruled rows, never a grid of cards, and a bordered box is never placed inside another bordered box.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Dashed Means Uncertain Rule",
+        "body": "A dashed or dotted stroke always signals a weaker epistemic state. Never use dashes as decoration.",
+        "section": "shapes"
+      }
+    ],
+    "dos": [
+      "Do show a status pill (or a status ring in the graph) wherever a record title appears.",
+      "Do take every colour from a token on `:root` and give it a counterpart in both the dark media query and the `data-theme=\"dark\"` block.",
+      "Do colour origin models only through the name hash, and give human or unknown authors the neutral chip.",
+      "Do keep the trust bar's fixed status order and its two sizes (12px on the overview, 8px in lists).",
+      "Do use the 16px single-weight (1.6) line icon set for every icon, including new ones.",
+      "Do use tabular numerals for every figure and pewter (text-3) for meta.",
+      "Do keep motion to arrivals (drawer, palette, toast, live row) on the shared decelerating ease, and respect reduced motion."
+    ],
+    "donts": [
+      "Don't use a status hue, a kind hue or iris for decoration, backgrounds or emphasis that encodes nothing.",
+      "Don't give an AI provider a fixed or brand colour.",
+      "Don't lay lists out as card grids or place a bordered box inside another bordered box; use ruled rows.",
+      "Don't add shadows to rows, sections or inline boxes; only the drawer and floating overlays are lifted.",
+      "Don't use dashed or dotted strokes except to signal uncertainty or a superseded state.",
+      "Don't add hero metrics, gradients or glow to the overview; the trust bar is the summary.",
+      "Don't put the product name into tokens, colours or shapes; it comes from configuration."
+    ]
+  }
+}

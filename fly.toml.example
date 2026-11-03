@@ -1,0 +1,29 @@
+# Example Fly.io config. Copy to fly.toml, change app and MEMLAYER_PUBLIC_URL, then:
+#   fly volumes create memlayer_data --size 1
+#   fly secrets set MEMLAYER_SIGNUP_CODE=<invite code>   # optional: invite-only sign-up
+#   fly deploy
+app = "memlayer-example"
+primary_region = "iad"
+
+[build]
+
+[env]
+  MEMLAYER_PUBLIC_URL = "https://memlayer-example.fly.dev"
+  MEMLAYER_DATA_DIR = "/data"
+  PORT = "8000"
+
+[mounts]
+  source = "memlayer_data"
+  destination = "/data"
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  auto_stop_machines = "off"   # one machine: accounts and memory files live on its volume
+  min_machines_running = 1
+
+  [[http_service.checks]]
+    method = "GET"
+    path = "/healthz"
+    interval = "30s"
+    timeout = "5s"

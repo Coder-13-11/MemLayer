@@ -1,0 +1,11 @@
+.venv
+**/__pycache__
+*.db
+*.db-*
+tests
+samples
+scripts
+.impeccable
+.claude
+memlayer.egg-info
+demo_output.txt

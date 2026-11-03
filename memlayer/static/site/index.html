@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{BRAND_NAME}} · One memory for every AI you use</title>
+<meta name="description" content="{{BRAND_NAME}} gives ChatGPT, Claude, Gemini and Perplexity one shared research memory. Every claim keeps its source, its author and its evidence.">
+<link rel="preload" href="/static/fonts/stix-two-text-var.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/static/fonts/archivo-var.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/static/site/site.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23111'/%3E%3Cpath d='M9 22V10h3l4 7 4-7h3v12h-3v-7l-4 7-4-7v7z' fill='%23fff'/%3E%3Ccircle cx='25' cy='8' r='3' fill='%23c8102e'/%3E%3C/svg%3E">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="masthead">
+  <div class="masthead-row">
+    <a class="wordmark" href="/">{{BRAND_NAME}}</a>
+    <nav aria-label="Sections">
+      <a href="#fig1">Demo</a>
+      <a href="#method">Connect</a>
+      <a href="#record">Records</a>
+      <a href="#security">Security</a>
+      <a href="#limitations">Limitations</a>
+    </nav>
+    <a class="btn btn-red btn-sm" href="#request">Request access</a>
+  </div>
+  <div class="volume-line">
+    <span>Shared research memory</span><span>Private beta</span><span>Works with any MCP client</span>
+  </div>
+</header>
+
+<main id="main">
+
+<section class="title-block" aria-labelledby="title">
+  <div class="title-main">
+    <h1 id="title">One memory for every AI you use. Every claim cited.</h1>
+    <p class="byline">
+      <a href="#t-chatgpt" data-row="t-chatgpt">ChatGPT<sup>1</sup></a>,
+      <a href="#t-claude" data-row="t-claude">Claude<sup>2</sup></a>,
+      <a href="#t-gemini" data-row="t-gemini">Gemini<sup>3</sup></a>,
+      <a href="#t-perplexity" data-row="t-perplexity">Perplexity<sup>4</sup></a>
+      <span class="and">and you</span>
+    </p>
+    <p class="abstract">
+      <strong>Abstract.</strong> Research rarely stays in one chat. What ChatGPT found on Monday is gone when you ask
+      Claude on Wednesday, so you explain it again, and any mistake travels with you. {{BRAND_NAME}} gives your
+      assistants one memory they read and write through the Model Context Protocol<a class="cite" href="#ref-1">[1]</a>.
+      Each finding records which model wrote it, the words it came from and the evidence behind it. When two
+      claims disagree, the conflict is flagged and both are kept, never silently overwritten.
+    </p>
+  </div>
+
+  <aside class="submission" id="request" aria-labelledby="request-title">
+    <h2 id="request-title">Request access</h2>
+    <p>{{BRAND_NAME}} is in private beta. Invites go out in small batches.</p>
+    <form class="beta-form" method="post" action="/beta" novalidate>
+      <label for="beta-email">Work or school email</label>
+      <input id="beta-email" name="email" type="email" autocomplete="email" required placeholder="you@lab.org">
+      <label for="beta-topic">What are you researching? <span class="opt">Optional</span></label>
+      <textarea id="beta-topic" name="topic" rows="2" maxlength="500" placeholder="Coastal wetland loss from satellite imagery"></textarea>
+      <div class="hp" aria-hidden="true"><label for="beta-site">Leave empty</label><input id="beta-site" name="website" tabindex="-1" autocomplete="off"></div>
+      <button class="btn btn-red btn-block" type="submit">Request an invite</button>
+      <p class="form-msg" role="status" aria-live="polite"></p>
+    </form>
+  </aside>
+</section>
+
+<figure class="plate demo" id="fig1" aria-labelledby="fig1-cap">
+  <div class="demo-bar">
+    <div class="chapters" role="tablist" aria-label="Demo chapters">
+      <button role="tab" data-ch="0"><b>a</b> ChatGPT files findings</button>
+      <button role="tab" data-ch="1"><b>b</b> Claude catches a conflict</button>
+      <button role="tab" data-ch="2"><b>c</b> Gemini answers with citations</button>
+    </div>
+    <button class="play" type="button" aria-label="Pause demo"><svg viewBox="0 0 16 16" aria-hidden="true"><path class="i-pause" d="M5 3.5v9M11 3.5v9"/><path class="i-play" d="M5 3.5l8 4.5-8 4.5z"/></svg><span>Pause</span></button>
+  </div>
+  <div class="demo-body">
+    <div class="session" aria-live="off">
+      <div class="session-head"><span class="who-dot"></span><span class="who">ChatGPT</span><span class="when"></span></div>
+      <ol class="transcript"></ol>
+    </div>
+    <div class="ledger">
+      <div class="ledger-head">
+        <span class="ledger-title">Wetland loss, Louisiana coast</span>
+        <span class="ledger-count">0 records</span>
+      </div>
+      <div class="trust" role="img" aria-label="No records yet"></div>
+      <ol class="ledger-rows"></ol>
+      <p class="ledger-empty">Records appear here as the assistants file them.</p>
+    </div>
+  </div>
+  <figcaption id="fig1-cap"><b>Fig. 1 | Three assistants, one memory.</b> <b>a</b>, ChatGPT files findings with their
+    source wording; only the claim with a cited source is marked supported. <b>b</b>, Days later Claude reads the
+    project, files a new measurement and the analyzer flags that it disagrees with an earlier one. Both records are
+    kept. <b>c</b>, Gemini answers from memory; each citation lights the records it relies on. Illustrative data.</figcaption>
+</figure>
+
+<article class="paper">
+
+<section id="method" aria-labelledby="method-h">
+  <h2 id="method-h"><span class="sec">1</span>Connect your assistants</h2>
+  <div class="prose">
+    <p>Every assistant connects to the same address. The app registers itself, sends you here to sign in once,
+      and from then on reads and writes your memory with a token that only works for your account<a class="cite" href="#ref-2">[2]</a>.
+      Nothing else is configured per app.</p>
+  </div>
+  <div class="address">
+    <span class="address-label">Your connection address</span>
+    <code class="address-url">{{MCP_URL}}</code>
+    <button class="btn btn-sm copy" type="button" data-copy="{{MCP_URL}}">Copy</button>
+  </div>
+  <table class="t1" aria-describedby="t1-cap">
+    <caption id="t1-cap"><b>Table 1 | Where to add the address.</b> Menu names change often; the address does not.</caption>
+    <thead><tr><th scope="col">Assistant</th><th scope="col">Where</th><th scope="col">Plan</th></tr></thead>
+    <tbody>
+      <tr id="t-chatgpt"><th scope="row"><sup>1</sup>ChatGPT</th><td>Settings, Apps &amp; Connectors, Advanced: turn on Developer mode, then create a connector with the address and choose OAuth.</td><td>Paid plans</td></tr>
+      <tr id="t-claude"><th scope="row"><sup>2</sup>Claude</th><td>Settings, Connectors, Add custom connector. Paste the address, then Connect. Works on web, desktop and mobile.</td><td>All plans; Free allows one custom connector</td></tr>
+      <tr id="t-gemini"><th scope="row"><sup>3</sup>Gemini</th><td>Connected apps, add a custom connection with the address.</td><td>Where your account offers custom connections</td></tr>
+      <tr id="t-perplexity"><th scope="row"><sup>4</sup>Perplexity</th><td>Account settings, Connectors, add a custom remote connector.</td><td>Paid plans, rolling out</td></tr>
+      <tr id="t-code"><th scope="row">Claude Code</th><td><code class="cmd">{{CLAUDE_CODE_CMD}}</code> <button class="btn btn-xs copy" type="button" data-copy="{{CLAUDE_CODE_CMD}}">Copy</button></td><td>Any</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section id="record" aria-labelledby="record-h">
+  <h2 id="record-h"><span class="sec">2</span>What every record keeps</h2>
+  <div class="prose">
+    <p>A memory is only useful if you can tell what to trust. Nothing is stored as a bare sentence: each record
+      carries its standing, and changing it leaves the old version in its history.</p>
+  </div>
+  <figure class="plate specimen" aria-labelledby="fig2-cap">
+    <div class="spec-grid">
+      <div class="rec-card">
+        <div class="rec-top"><span class="part" data-part="a"><span class="pill pill-supported"><i></i>Evidence-supported</span></span><span class="rec-id">rec_2c77f0a14b9e</span></div>
+        <p class="rec-kind part" data-part="b">Finding</p>
+        <h3 class="rec-title">Sentinel-2 provides free multispectral imagery at 10 m resolution</h3>
+        <dl class="rec-prov">
+          <div class="part" data-part="c"><dt>Written by</dt><dd><span class="chip">chatgpt</span> in "Feasibility session", 31 Oct</dd></div>
+          <div class="part" data-part="d"><dt>Source wording</dt><dd class="verbatim">"Sentinel-2 gives you free 10 m multispectral imagery, which is enough for wetland boundaries."</dd></div>
+          <div class="part" data-part="e"><dt>Evidence</dt><dd>ESA Sentinel-2 User Handbook <span class="checked">checked 2 Nov</span></dd></div>
+          <div class="part" data-part="f"><dt>History</dt><dd>2 versions; status changed by you, reason given</dd></div>
+        </dl>
+      </div>
+      <ol class="callouts">
+        <li data-part="a"><b>a</b> <span><strong>Status.</strong> Unverified until a source is attached. A model cannot mark its own claim as supported without one.</span></li>
+        <li data-part="b"><b>b</b> <span><strong>Kind.</strong> Finding, decision, assumption, question, task and four more, so the project reads like a lab notebook, not a chat log.</span></li>
+        <li data-part="c"><b>c</b> <span><strong>Origin.</strong> Which model wrote it and in which conversation. No assistant is privileged.</span></li>
+        <li data-part="d"><b>d</b> <span><strong>Source wording.</strong> The exact words it came from, kept verbatim and treated as data, never as instructions.</span></li>
+        <li data-part="e"><b>e</b> <span><strong>Evidence.</strong> Links or citations with the date someone actually checked them.</span></li>
+        <li data-part="f"><b>f</b> <span><strong>History.</strong> Corrections supersede; nothing is overwritten. Assistants cannot delete.</span></li>
+      </ol>
+    </div>
+    <figcaption id="fig2-cap"><b>Fig. 2 | Anatomy of a record.</b> Point at a label or a part of the record to match them. Illustrative data.</figcaption>
+  </figure>
+
+  <div class="prose">
+    <h3>Finding what is missing</h3>
+    <p>The gap analyzer reads the whole project and lists contradictions, claims without evidence, assumptions
+      nobody tested, decisions resting on unfinished work and questions still open. Every gap names the records it
+      is based on and says how sure it is. For conflicts that only show in the wording, ask your own assistant to
+      review the project: it records what it finds back into memory, with a note, for you to settle.</p>
+  </div>
+  <figure class="plate gaps-fig" aria-labelledby="fig3-cap">
+    <div class="gaps-inner">
+      <div class="trust trust-lg" role="img" aria-label="16 records: 3 evidence-supported, 10 unverified, 1 challenged, 1 contradicted, 1 superseded">
+        <button data-s="evidence_supported" style="flex:3" title="3 evidence-supported"></button>
+        <button data-s="unverified" style="flex:10" title="10 unverified"></button>
+        <button data-s="challenged" style="flex:1" title="1 challenged"></button>
+        <button data-s="contradicted" style="flex:1" title="1 contradicted"></button>
+        <button data-s="superseded" style="flex:1" title="1 superseded"></button>
+      </div>
+      <ul class="trust-legend">
+        <li data-s="evidence_supported"><i></i><b>3</b> evidence-supported</li>
+        <li data-s="unverified"><i></i><b>10</b> unverified</li>
+        <li data-s="challenged"><i></i><b>1</b> challenged</li>
+        <li data-s="contradicted"><i></i><b>1</b> contradicted</li>
+        <li data-s="superseded"><i></i><b>1</b> superseded</li>
+      </ul>
+      <ol class="gap-list">
+        <li class="sev-high" data-s="contradicted"><b>Possible contradiction</b> Revisit time stated as 5 days and as 10 days for the same area. <span>possible · 2 records</span></li>
+        <li class="sev-high" data-s="unverified"><b>Missing evidence</b> "A U-Net runs on one 12 GB GPU" is relied on by two decisions. <span>certain · 3 records</span></li>
+        <li class="sev-med" data-s="challenged"><b>Unresolved assumption</b> NWI 2019 polygons are assumed current. <span>stated · 1 record</span></li>
+      </ol>
+    </div>
+    <figcaption id="fig3-cap"><b>Fig. 3 | A project's standing at a glance.</b> The bar divides records by status; select a segment to see the gaps it holds. Illustrative data.</figcaption>
+  </figure>
+</section>
+
+<section id="security" aria-labelledby="security-h">
+  <h2 id="security-h"><span class="sec">3</span>Data and security</h2>
+  <dl class="methods">
+    <div><dt>Your memory, separately</dt><dd>Each account has its own database file. Every request is answered from the file that belongs to the signed-in account, so one person's records cannot appear in another's results.</dd></div>
+    <div><dt>Sign-in</dt><dd>OAuth 2.1 with PKCE and per-app registration<a class="cite" href="#ref-2">[2]</a><a class="cite" href="#ref-3">[3]</a>. The approval screen shows which app is asking and where you will be sent back to.</dd></div>
+    <div><dt>Secrets at rest</dt><dd>Passwords are stored as scrypt hashes; access codes and tokens only as SHA-256 hashes. Access lasts an hour and renews; revoking an app ends it immediately.</dd></div>
+    <div><dt>What assistants can do</dt><dd>Read, add and update. Assistants cannot delete anything, and every change keeps the previous version.</dd></div>
+    <div><dt>Untrusted text</dt><dd>Imported conversations are stored as data. They are never rendered as HTML or followed as instructions.</dd></div>
+    <div><dt>No model of our own</dt><dd>{{BRAND_NAME}} calls no AI model and does not use your memory to train one. Only the assistants you approve can read it.</dd></div>
+  </dl>
+</section>
+
+<section id="limitations" aria-labelledby="limitations-h">
+  <h2 id="limitations-h"><span class="sec">4</span>Limitations</h2>
+  <ul class="limits">
+    <li>Assistants decide when to use memory. Asking "check my project memory" is the reliable trigger.</li>
+    <li>The built-in gap analyzer works from rules, links and stated values. Contradictions that live only in the wording need your assistant's review.</li>
+    <li>Custom connectors depend on each assistant's plan and rollout (Table 1). Menu names change without notice.</li>
+    <li>Memory is personal for now. Shared team projects, account export and deletion from the web are planned before public launch.</li>
+  </ul>
+</section>
+
+<section class="close" aria-labelledby="close-h">
+  <h2 id="close-h">Stop re-explaining your research.</h2>
+  <p>Join the private beta and connect your first assistant in a minute.</p>
+  <a class="btn btn-red" href="#request">Request access</a>
+</section>
+
+<section class="refs" aria-labelledby="refs-h">
+  <h2 id="refs-h">References</h2>
+  <ol>
+    <li id="ref-1">Model Context Protocol specification. modelcontextprotocol.io</li>
+    <li id="ref-2">The OAuth 2.1 Authorization Framework. IETF draft-ietf-oauth-v2-1</li>
+    <li id="ref-3">OAuth 2.0 Dynamic Client Registration Protocol. IETF RFC 7591</li>
+  </ol>
+</section>
+
+</article>
+</main>
+
+<footer class="colophon">
+  <span class="wordmark">{{BRAND_NAME}}</span>
+  <span>Set in STIX Two and Archivo.</span>
+  <span>Private beta, 2026</span>
+</footer>
+
+<script src="/static/site/site.js" defer></script>
+</body>
+</html>
