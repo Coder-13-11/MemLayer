@@ -1,0 +1,11 @@
+.venv
+tests
+samples
+scripts
+.impeccable
+*.db
+*.db-*
+Dockerfile
+fly.toml.example
+demo_output.txt
+memlayer.egg-info

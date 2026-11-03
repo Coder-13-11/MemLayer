@@ -75,15 +75,19 @@ function connectSection(ctx) {
   const m = ctx.meta?.mcp;
   if (!m) return null;
   const copy = (text) => navigator.clipboard?.writeText(text).then(() => toast("Copied"));
-  const add = `claude mcp add --scope user ${m.server_name} -- ${m.stdio_command}`;
+  const add = m.url ? m.url : `claude mcp add --scope user ${m.server_name} -- ${m.stdio_command}`;
   return h("div", { class: "connect" },
     h("div", {},
       h("h2", {}, "Connect an AI client"),
-      h("p", {}, "Any MCP client that can launch a local server can read and write this memory. Claude Code and Claude Desktop work today. ChatGPT only connects to remote HTTPS servers, so for now bring ChatGPT research in with Import."),
-      h("div", { class: "code" }, h("span", {}, add), h("button", { class: "icon-btn", "aria-label": "Copy command", onclick: () => copy(add) }, icon("copy")))),
+      h("p", {}, m.url
+        ? "Paste this address into ChatGPT (Developer mode connectors), Claude (Settings, Connectors), Gemini or Perplexity custom connectors. The app asks you to sign in once, then reads and writes this memory."
+        : "Any MCP client that can launch a local server can read and write this memory. Claude Code and Claude Desktop work today. ChatGPT only connects to remote HTTPS servers, so for now bring ChatGPT research in with Import."),
+      h("div", { class: "code" }, h("span", {}, add), h("button", { class: "icon-btn", "aria-label": "Copy", onclick: () => copy(add) }, icon("copy")))),
     h("div", {},
       h("h2", {}, "Ask your AI to review a project"),
-      h("p", {}, "The built-in gap analysis follows fixed rules. For contradictions that only show in the wording, run the review_project prompt from your MCP client. The AI records each conflict it finds back into memory, and the conflicts appear here."),
+      h("p", {}, m.url
+        ? "The built-in gap analysis follows fixed rules. For contradictions that only show in the wording, ask your assistant to \u201creview my project memory\u201d. It records each conflict back into memory, and the conflicts appear here."
+        : "The built-in gap analysis follows fixed rules. For contradictions that only show in the wording, run the review_project prompt from your MCP client. The AI records each conflict it finds back into memory, and the conflicts appear here."),
       h("div", { class: "code" }, h("span", {}, `/mcp__${m.server_name}__review_project "Project name"`),
         h("button", { class: "icon-btn", "aria-label": "Copy", onclick: () => copy(`/mcp__${m.server_name}__review_project`) }, icon("copy")))));
 }

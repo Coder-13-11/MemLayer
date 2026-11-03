@@ -48,6 +48,8 @@ code { font: 500 .82em/1.4 var(--mono); }
 .masthead nav { display: flex; gap: 26px; margin-left: auto; font: 500 14px/1 var(--sans); }
 .masthead nav a { text-decoration: none; color: var(--ink-2); padding: 6px 0; background: linear-gradient(var(--ink), var(--ink)) 0 100% / 0 1.5px no-repeat; transition: background-size .35s var(--ease), color .2s; }
 .masthead nav a:hover { color: var(--ink); background-size: 100% 1.5px; }
+.signin { font: 600 14px/1 var(--sans); text-decoration: none; color: var(--ink); padding: 6px 2px; }
+.signin:hover { text-decoration: underline; }
 .volume-line { border-top: 1px solid var(--hair); }
 .volume-line { display: flex; justify-content: center; gap: 0; font: 500 12.5px/1 var(--sans); color: var(--ink-3); padding: 8px var(--gutter); }
 .volume-line span + span::before { content: ""; display: inline-block; width: 4px; height: 4px; border-radius: 50%; background: var(--red); margin: 0 14px 2px; vertical-align: middle; }
@@ -338,5 +340,6 @@ figcaption b { color: var(--ink); font-weight: 700; }
 .auth-form { margin-top: 10px; }
 .auth-actions { display: grid; grid-template-columns: 1fr 1.6fr; gap: 10px; margin-top: 24px; }
 .auth-actions .btn { margin: 0; }
+.auth-actions.single { grid-template-columns: 1fr; }
 .auth-switch { margin: 22px 0 0; font: 400 15px/1.5 var(--sans); color: var(--ink-2); }
 .auth-switch a { color: var(--ink); font-weight: 600; }

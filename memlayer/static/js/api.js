@@ -10,6 +10,10 @@ async function request(method, path, body) {
   const res = await fetch(path, opts);
   let data = null;
   try { data = await res.json(); } catch { /* empty body */ }
+  if (res.status === 401) {  // hosted: the sign-in session ended
+    location.href = `/login?next=${encodeURIComponent("/app" + location.hash)}`;
+    throw new Error("Signed out");
+  }
   if (!res.ok) throw new Error(data?.error || `${method} ${path} failed (${res.status})`);
   return data;
 }
@@ -24,6 +28,7 @@ const qs = (params) => {
 
 export const api = {
   meta: () => request("GET", "/api/meta"),
+  revision: (since) => request("GET", `/api/revision${qs({ since })}`),
   projects: () => request("GET", "/api/projects"),
   createProject: (body) => request("POST", "/api/projects", body),
   project: (pid) => request("GET", `/api/projects/${enc(pid)}`),

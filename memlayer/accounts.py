@@ -99,6 +99,7 @@ ACCESS_TTL = 3600
 REFRESH_TTL = 60 * 60 * 24 * 30
 CODE_TTL = 300
 REQUEST_TTL = 900
+SESSION_TTL = 60 * 60 * 24 * 30
 LAST_USED_RESOLUTION = 60  # seconds; avoid a write on every MCP call
 
 
@@ -225,6 +226,29 @@ class AccountStore:
                 target = self.location if self.dialect == "pg" else self.memory_path(user_id)
                 store = self._stores[user_id] = MemoryStore(target, schema=f"u_{user_id[4:]}")
             return store
+
+    # ------------------------------------------------------- dashboard sessions
+
+    def create_session(self, user_id: str) -> str:
+        """A signed-in browser session for the dashboard. Only the hash of the id is stored."""
+        sid = secrets.token_urlsafe(32)
+        with self._tx() as c:
+            c.execute("DELETE FROM web_sessions WHERE expires_at < ?", (int(time.time()),))
+            c.execute("INSERT INTO web_sessions (id_hash, user_id, created_at, expires_at) VALUES (?, ?, ?, ?)",
+                      (digest(sid), user_id, now(), int(time.time()) + SESSION_TTL))
+        return sid
+
+    def session_user(self, sid: str | None) -> dict[str, Any] | None:
+        if not sid:
+            return None
+        row = self._one("SELECT u.id, u.email FROM web_sessions s JOIN users u ON u.id = s.user_id "
+                        "WHERE s.id_hash = ? AND s.expires_at > ? AND u.disabled = 0", digest(sid), int(time.time()))
+        return {"id": row["id"], "email": row["email"]} if row else None
+
+    def end_session(self, sid: str | None) -> None:
+        if sid:
+            with self._tx() as c:
+                c.execute("DELETE FROM web_sessions WHERE id_hash = ?", (digest(sid),))
 
     # ------------------------------------------------------------ beta list
 

@@ -14,6 +14,8 @@ accepted only for localhost testing.
 from __future__ import annotations
 
 import argparse
+from contextlib import asynccontextmanager
+from contextvars import ContextVar
 import hmac
 import html
 import os
@@ -28,16 +30,26 @@ from mcp.server.auth.middleware.auth_context import get_access_token
 from mcp.server.auth.provider import construct_redirect_uri
 from mcp.server.auth.settings import AuthSettings, ClientRegistrationOptions, RevocationOptions
 from mcp.server.fastmcp import FastMCP
+from mcp.server.streamable_http_manager import StreamableHTTPSessionManager
 from mcp.server.transport_security import TransportSecuritySettings
 from starlette.requests import Request
 from starlette.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse, Response
 from starlette.types import ASGIApp, Receive, Scope, Send
 
-from .accounts import MIN_PASSWORD, AccountStore
+from .accounts import MIN_PASSWORD, SESSION_TTL, AccountStore
 from .brand import BRAND
 from .models import ValidationError
 from .oauth import SCOPE, MemLayerOAuthProvider
 from .server import create_server
+from .web import create_app as create_web_app
+
+
+def client_ip(request: Request) -> str:
+    """The visitor's address, for rate limiting. Behind Vercel's proxy the socket address is the proxy, and
+    Vercel sets x-real-ip itself; anywhere else that header could be forged, so it is ignored."""
+    if os.environ.get("VERCEL") and request.headers.get("x-real-ip"):
+        return request.headers["x-real-ip"]
+    return request.client.host if request.client else "unknown"
 
 
 class RateLimiter:
@@ -135,6 +147,63 @@ class WellKnown:
         await self.app(scope, receive, send)
 
 
+class PerRequestSessions:
+    """Stateless MCP that needs no startup hook.
+
+    FastMCP normally starts one session manager in the app's lifespan. Serverless hosts (Vercel) may never
+    run lifespan events, so each request gets its own short-lived manager instead. In stateless mode nothing
+    is shared between requests anyway.
+    """
+
+    def __init__(self, server: Any, security: TransportSecuritySettings):
+        self.server, self.security = server, security
+
+    @asynccontextmanager
+    async def run(self):
+        yield
+
+    async def handle_request(self, scope: Scope, receive: Receive, send: Send) -> None:
+        manager = StreamableHTTPSessionManager(app=self.server, stateless=True, json_response=True,
+                                               security_settings=self.security)
+        async with manager.run():
+            await manager.handle_request(scope, receive, send)
+
+
+class Dashboard:
+    """Sends /app and /api/* to the dashboard for a signed-in browser, everything else to the site and MCP app.
+
+    Sign-in is a session cookie (only its hash is stored). Writes need the X-MemLayer header, which another site
+    cannot add without a CORS preflight that is never granted, and a matching Origin when the browser sends one.
+    """
+
+    WRITES = {"POST", "PATCH", "PUT", "DELETE"}
+
+    def __init__(self, site: ASGIApp, dashboard: ASGIApp, accounts: AccountStore, origin: str):
+        self.site, self.dashboard, self.accounts, self.origin = site, dashboard, accounts, origin
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        path = scope.get("path", "")
+        if scope["type"] != "http" or not (path in ("/app", "/app/") or path.startswith("/api/")):
+            return await self.site(scope, receive, send)
+        request = Request(scope)
+        user = self.accounts.session_user(request.cookies.get(SESSION_COOKIE))
+        if user is None:
+            response: Response = (RedirectResponse("/login?next=/app", status_code=303) if path.startswith("/app")
+                                  else JSONResponse({"error": "Your session ended. Sign in again."}, status_code=401))
+            return await response(scope, receive, send)
+        if scope["method"] in self.WRITES:
+            origin = request.headers.get("origin")
+            if request.headers.get("x-memlayer") != "1" or (origin and origin != self.origin):
+                return await JSONResponse({"error": "Cross-site request refused."}, status_code=403)(scope, receive, send)
+        if path == "/app/":
+            scope = {**scope, "path": "/app"}
+        token = _web_user.set(user)
+        try:
+            await self.dashboard(scope, receive, send)
+        finally:
+            _web_user.reset(token)
+
+
 def create_hosted_app(data_dir: str, public_url: str, *, signup_code: str | None = None,
                       accounts: AccountStore | None = None) -> tuple[ASGIApp, AccountStore]:
     public_url = public_url.rstrip("/")
@@ -149,6 +218,14 @@ def create_hosted_app(data_dir: str, public_url: str, *, signup_code: str | None
         if token is None or not token.subject:  # the auth middleware rejects these before any tool runs
             raise PermissionError("Not signed in")
         return accounts.memory_for(token.subject)
+
+    security = TransportSecuritySettings(
+        enable_dns_rebinding_protection=True,
+        allowed_hosts=[parsed.netloc, f"{parsed.hostname}:*"],
+        allowed_origins=[f"{parsed.scheme}://{parsed.netloc}"],
+    )
+    origin = f"{parsed.scheme}://{parsed.netloc}"
+    https = parsed.scheme == "https"
 
     mcp: FastMCP = create_server(
         store_for_request=store_for_request,
@@ -165,12 +242,18 @@ def create_hosted_app(data_dir: str, public_url: str, *, signup_code: str | None
         host="0.0.0.0",
         stateless_http=True,
         json_response=True,
-        transport_security=TransportSecuritySettings(
-            enable_dns_rebinding_protection=True,
-            allowed_hosts=[parsed.netloc, f"{parsed.hostname}:*"],
-            allowed_origins=[f"{parsed.scheme}://{parsed.netloc}"],
-        ),
+        transport_security=security,
     )
+    mcp._session_manager = PerRequestSessions(mcp._mcp_server, security)  # SDK 1.x attribute; see the class
+
+    def web_store():
+        user = _web_user.get()
+        if user is None:  # Dashboard rejects these before any handler runs
+            raise PermissionError("Not signed in")
+        return accounts.memory_for(user["id"])
+
+    dashboard = create_web_app(store_for_request=web_store,
+                               hosted={"mcp_url": f"{public_url}/mcp", "account": lambda: _web_user.get()})
 
     # ----------------------------------------------------------- pages
 
@@ -197,7 +280,7 @@ def create_hosted_app(data_dir: str, public_url: str, *, signup_code: str | None
             data = await request.json() if is_json else dict(await request.form())
         except ValueError:
             return JSONResponse({"error": "Send the form again."}, status_code=400)
-        ip = request.client.host if request.client else "unknown"
+        ip = client_ip(request)
         if beta_limiter.blocked(f"ip:{ip}"):
             return JSONResponse({"error": "Too many requests from this network. Try again in an hour."}, status_code=429)
         beta_limiter.fail(f"ip:{ip}")
@@ -216,6 +299,59 @@ def create_hosted_app(data_dir: str, public_url: str, *, signup_code: str | None
     @mcp.custom_route("/healthz", methods=["GET"])
     async def health(request: Request) -> Response:
         return JSONResponse({"ok": True})
+
+    def safe_next(value: str | None) -> str:
+        return value if value and value.startswith("/app") else "/app"
+
+    @mcp.custom_route("/login", methods=["GET", "POST"])
+    async def login(request: Request) -> Response:
+        if request.method == "GET":
+            if accounts.session_user(request.cookies.get(SESSION_COOKIE)):
+                return RedirectResponse(safe_next(request.query_params.get("next")), status_code=303)
+            mode = "signup" if request.query_params.get("mode") == "signup" else "signin"
+            return HTMLResponse(_login_page(mode, signup_code is not None, next_=safe_next(request.query_params.get("next"))))
+        if request.headers.get("origin") not in (None, origin):
+            return HTMLResponse("Cross-site request refused.", status_code=403)
+        form = await request.form()
+        mode = "signup" if form.get("mode") == "signup" else "signin"
+        email = str(form.get("email", "")).strip()
+        password = str(form.get("password", ""))
+        next_ = safe_next(str(form.get("next", "")))
+        ip = client_ip(request)
+        keys = (f"ip:{ip}", f"email:{email.lower()}")
+
+        def again(message: str, status: int = 400) -> Response:
+            return HTMLResponse(_login_page(mode, signup_code is not None, error=message, email=email, next_=next_),
+                                status_code=status)
+
+        if limiter.blocked(*keys):
+            return again("Too many attempts. Wait 15 minutes and try again.", 429)
+        if mode == "signup":
+            if signup_code is not None and not hmac.compare_digest(str(form.get("invite", "")), signup_code):
+                limiter.fail(*keys)
+                return again("That invite code isn't valid.")
+            try:
+                user = accounts.create_user(email, password)
+            except ValidationError as e:
+                return again(str(e))
+        else:
+            user = accounts.authenticate(email, password)
+            if not user:
+                limiter.fail(*keys)
+                return again("Email or password is incorrect.")
+        response = RedirectResponse(next_, status_code=303)
+        response.set_cookie(SESSION_COOKIE, accounts.create_session(user["id"]), max_age=SESSION_TTL,
+                            httponly=True, secure=https, samesite="lax", path="/")
+        return response
+
+    @mcp.custom_route("/logout", methods=["POST"])
+    async def logout(request: Request) -> Response:
+        if request.headers.get("origin") not in (None, origin):
+            return HTMLResponse("Cross-site request refused.", status_code=403)
+        accounts.end_session(request.cookies.get(SESSION_COOKIE))
+        response = RedirectResponse("/", status_code=303)
+        response.delete_cookie(SESSION_COOKIE, path="/")
+        return response
 
     @mcp.custom_route("/consent", methods=["GET", "POST"])
     async def consent(request: Request) -> Response:
@@ -247,7 +383,7 @@ def create_hosted_app(data_dir: str, public_url: str, *, signup_code: str | None
 
         email = str(form.get("email", "")).strip()
         password = str(form.get("password", ""))
-        ip = request.client.host if request.client else "unknown"
+        ip = client_ip(request)
         keys = (f"ip:{ip}", f"email:{email.lower()}")
 
         def again(message: str, status: int = 400) -> Response:
@@ -276,14 +412,16 @@ def create_hosted_app(data_dir: str, public_url: str, *, signup_code: str | None
         return RedirectResponse(construct_redirect_uri(params["redirect_uri"], code=code, state=params["state"]),
                                 status_code=302)
 
-    app = WellKnown(mcp.streamable_http_app(), public_url)
-    return SecurityHeaders(app, https=parsed.scheme == "https"), accounts
+    site = WellKnown(mcp.streamable_http_app(), public_url)
+    return SecurityHeaders(Dashboard(site, dashboard, accounts, origin), https=https), accounts
 
 
 # --------------------------------------------------------------------- HTML
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
-PUBLIC_STATIC = ("site/", "fonts/")  # the dashboard's own files are not served by the hosted app
+PUBLIC_STATIC = ("site/", "fonts/", "js/", "app.css")  # the public site, fonts and the dashboard's code
+SESSION_COOKIE = "ml_session"
+_web_user: ContextVar[dict[str, Any] | None] = ContextVar("memlayer_web_user", default=None)
 
 
 def _landing(public_url: str) -> str:
@@ -336,6 +474,29 @@ def _consent_page(req: dict[str, Any], client: dict[str, Any] | None, mode: str,
 <button class='btn btn-red' type='submit' name='action' value='allow'>{'Create account and allow' if signup else 'Allow access'}</button></div>
 </form><p class='auth-switch'>{other}</p>"""
     return _page("Connect", body)
+
+
+def _login_page(mode: str, needs_invite: bool, *, error: str | None = None, email: str = "", next_: str = "/app") -> str:
+    e = html.escape
+    signup = mode == "signup"
+    other = ("Already have an account? <a href='/login'>Sign in</a>" if signup else
+             "New here? <a href='/login?mode=signup'>Create an account</a>")
+    invite = ("<label for='invite'>Invite code</label><input id='invite' name='invite' required autocomplete='off'>"
+              if signup and needs_invite else "")
+    body = f"""<h1 class='auth-title'>{'Create your account' if signup else 'Sign in'}</h1>
+<p class='auth-lede'>{'Your memory, shared by every AI you connect.' if signup else
+                      'Open your memory: every project, record and source your assistants have saved.'}</p>
+{f"<p class='auth-err' role='alert'>{e(error)}</p>" if error else ""}
+<form class='beta-form auth-form' method='post' action='/login'>
+<input type='hidden' name='mode' value='{mode}'><input type='hidden' name='next' value='{e(next_)}'>
+<label for='email'>Email</label><input id='email' name='email' type='email' required autocomplete='email' value='{e(email)}'>
+<label for='password'>Password{" <span class='opt'>At least " + str(MIN_PASSWORD) + " characters</span>" if signup else ""}</label>
+<input id='password' name='password' type='password' required minlength='{MIN_PASSWORD if signup else 1}'
+ autocomplete='{'new-password' if signup else 'current-password'}'>
+{invite}
+<div class='auth-actions single'><button class='btn btn-red' type='submit'>{'Create account' if signup else 'Sign in'}</button></div>
+</form><p class='auth-switch'>{other}</p>"""
+    return _page("Sign in", body)
 
 
 def _expired_page() -> str:

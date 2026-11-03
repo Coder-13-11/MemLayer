@@ -274,7 +274,7 @@ async def test_landing_static_and_invite_requests(hosted):
         assert (await http.get(f"{base}/static/site/site.js")).status_code == 200
         font = await http.get(f"{base}/static/fonts/archivo-var.woff2")
         assert font.status_code == 200 and "immutable" in font.headers["cache-control"]
-        for path in ("/static/js/main.js", "/static/site/../../server.py", "/static/fonts/../schema.sql"):
+        for path in ("/static/index.html", "/static/site/../../server.py", "/static/fonts/../schema.sql"):
             assert (await http.get(f"{base}{path}")).status_code == 404  # only the public site's files
         bad = await http.post(f"{base}/beta", json={"email": "not an email"})
         assert bad.status_code == 400
@@ -360,3 +360,37 @@ def test_accounts_on_postgres_keep_users_apart():
             for u in (a, b):
                 c.execute(f'DROP SCHEMA IF EXISTS "u_{u["id"][4:]}" CASCADE')
                 c.execute("DELETE FROM memlayer_accounts.users WHERE id = %s", (u["id"],))
+
+
+async def test_dashboard_sign_in_and_isolation(hosted):
+    base, accounts = hosted
+    alice = accounts.create_user("dash-a@example.com", "a very good password")
+    accounts.memory_for(alice["id"]).create_project("Alice's project")
+    accounts.create_user("dash-b@example.com", "a very good password")
+    async with httpx.AsyncClient(base_url=base, follow_redirects=False) as anon:
+        assert (await anon.get("/app")).headers["location"].startswith("/login")
+        assert (await anon.get("/api/projects")).status_code == 401
+        assert "Sign in" in (await anon.get("/login")).text
+        bad = await anon.post("/login", data={"email": "dash-a@example.com", "password": "nope"})
+        assert bad.status_code == 400 and "incorrect" in bad.text
+    async with httpx.AsyncClient(base_url=base, follow_redirects=False) as a:
+        r = await a.post("/login", data={"email": "DASH-A@example.com", "password": "a very good password", "next": "/app"})
+        assert r.status_code == 303 and r.headers["location"] == "/app"
+        cookie = r.headers["set-cookie"]
+        assert "httponly" in cookie.lower() and "samesite=lax" in cookie.lower()
+        assert "<title>" in (await a.get("/app")).text
+        meta = (await a.get("/api/meta")).json()
+        assert meta["account"]["email"] == "dash-a@example.com" and meta["mcp"]["url"] == f"{base}/mcp"
+        assert meta["live"] == "poll" and "db_path" not in meta
+        assert [p["name"] for p in (await a.get("/api/projects")).json()["projects"]] == ["Alice's project"]
+        assert (await a.post("/api/projects", json={"name": "No header"})).status_code == 403
+        assert (await a.post("/api/projects", json={"name": "Cross"}, headers={
+            "X-MemLayer": "1", "Origin": "https://evil.example"})).status_code == 403
+        assert (await a.post("/api/projects", json={"name": "Second"}, headers={"X-MemLayer": "1"})).status_code == 201
+        assert (await a.get("/api/revision")).json()["revision"]
+        assert (await a.get("/api/events")).status_code == 404  # hosted pages poll instead
+        await a.post("/logout")
+        assert (await a.get("/api/projects")).status_code == 401
+    async with httpx.AsyncClient(base_url=base, follow_redirects=False) as b:
+        await b.post("/login", data={"email": "dash-b@example.com", "password": "a very good password"})
+        assert (await b.get("/api/projects")).json()["projects"] == []

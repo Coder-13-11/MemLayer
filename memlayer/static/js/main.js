@@ -159,7 +159,16 @@ function renderSidebar() {
       h("div", { class: "nav-item muted" }, "No projects yet"),
     h("div", { class: "sidebar-foot" },
       h("span", { class: `live-dot ${state.live ? "on" : ""}` }),
-      h("span", { title: state.meta?.db_path || "" }, state.live ? "Live: watching for changes" : "Offline: reconnecting"),
+      h("span", { title: state.meta?.account?.email || state.meta?.db_path || "" },
+        state.live ? (state.meta?.live === "poll" ? "Synced: checking for changes" : "Live: watching for changes")
+          : "Offline: reconnecting"),
+      state.meta?.account ? h("button", {
+        class: "icon-btn", "aria-label": "Sign out", title: `Sign out ${state.meta.account.email}`,
+        onclick: async () => {
+          await fetch("/logout", { method: "POST" });
+          location.href = "/";
+        },
+      }, icon("logout")) : null,
       h("button", {
         class: "icon-btn", "aria-label": "Toggle theme", title: "Toggle light/dark",
         onclick: () => {
@@ -205,13 +214,9 @@ const ACTION_TEXT = {
   linked: "linked", source_imported: "imported",
 };
 
-function connectEvents() {
-  let refreshTimer = null;
-  const es = new EventSource("/api/events");
-  es.addEventListener("hello", () => { state.live = true; renderSidebar(); });
-  es.addEventListener("change", (ev) => {
-    let data = {};
-    try { data = JSON.parse(ev.data); } catch { return; }
+let refreshTimer = null;
+
+function onChange(data) {
     const external = (data.activity || []).filter((a) => a.actor !== "dashboard");
     const seen = new Set();
     // Oldest first so "saved" wins over the "linked" that came with the same save.
@@ -225,9 +230,37 @@ function connectEvents() {
     window.__freshIds = new Set((data.activity || []).map((a) => `${a.at}|${a.action}|${a.record_id}`));
     clearTimeout(refreshTimer);
     refreshTimer = setTimeout(() => refresh(), 250);
+}
+
+function connectEvents() {
+  if (state.meta?.live === "poll") return pollChanges();
+  const es = new EventSource("/api/events");
+  es.addEventListener("hello", () => { state.live = true; renderSidebar(); });
+  es.addEventListener("change", (ev) => {
+    let data = {};
+    try { data = JSON.parse(ev.data); } catch { return; }
+    onChange(data);
   });
   es.onerror = () => { state.live = false; renderSidebar(); };
   es.onopen = () => { state.live = true; renderSidebar(); };
+}
+
+// Hosted: serverless hosts cut long-lived streams, so ask what changed every few seconds instead.
+async function pollChanges() {
+  let rev = null, since = null;
+  const tick = async () => {
+    try {
+      const res = await api.revision(since);
+      if (!state.live) { state.live = true; renderSidebar(); }
+      if (rev !== null && res.revision !== rev) onChange(res);
+      rev = res.revision;
+      since = res.latest || since;
+    } catch {
+      if (state.live) { state.live = false; renderSidebar(); }
+    }
+    setTimeout(tick, document.hidden ? 15000 : 4000);
+  };
+  tick();
 }
 
 // -------------------------------------------------------------------- boot
@@ -252,7 +285,7 @@ matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
     document.title = state.meta.brand.name;
     state.projects = (await api.projects()).projects;
   } catch (e) {
-    toast(`Could not reach the local server: ${e.message}`, { error: true });
+    toast(`Could not reach the server: ${e.message}`, { error: true });
   }
   await route();
   connectEvents();

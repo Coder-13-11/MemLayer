@@ -19,7 +19,7 @@ import json
 import sys
 from collections import Counter
 from importlib import resources
-from typing import Any
+from typing import Any, Callable
 
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
@@ -98,8 +98,22 @@ def _gap_brief(g: dict[str, Any]) -> dict[str, Any]:
                                     "suggested_action")}
 
 
-def create_app(db_path: str, store: MemoryStore | None = None, poll_seconds: float = 1.0) -> Starlette:
-    store = store or MemoryStore(db_path)
+def create_app(db_path: str | None = None, store: MemoryStore | None = None, poll_seconds: float = 1.0, *,
+               store_for_request: Callable[[], MemoryStore] | None = None,
+               hosted: dict[str, Any] | None = None) -> Starlette:
+    """Local use: one database, localhost only, a live event stream.
+
+    The hosted service passes ``store_for_request`` (the signed-in account's memory) and ``hosted`` (``mcp_url``
+    and an ``account()`` callable). It then wraps the app in its own sign-in middleware, serves the static files
+    itself, and the page polls /api/revision instead of holding a stream open (serverless hosts cut those off).
+    """
+    if store_for_request is not None:
+        class _Current:  # resolves to the signed-in account's memory on every call
+            def __getattr__(self, name: str) -> Any:
+                return getattr(store_for_request(), name)
+        store = _Current()  # type: ignore[assignment]
+    else:
+        store = store or MemoryStore(db_path)
     static_dir = resources.files("memlayer").joinpath("static")
 
     def project_summary(p: dict[str, Any]) -> dict[str, Any]:
@@ -121,16 +135,21 @@ def create_app(db_path: str, store: MemoryStore | None = None, poll_seconds: flo
         return HTMLResponse(page.replace("{{BRAND_NAME}}", html.escape(BRAND["name"])))
 
     async def meta(request: Request) -> JSONResponse:
-        python = sys.executable
+        mcp = {
+            "server_name": BRAND["mcp_server_name"],
+            "tools": ["get_project_context", "search_memory", "get_memory_details", "save_memory",
+                      "update_memory", "analyze_gaps", "import_source", "create_project", "list_projects",
+                      "get_review_instructions"],
+            "prompts": ["review_project"],
+        }
+        if hosted:
+            mcp["url"] = hosted["mcp_url"]
+            where = {"account": hosted["account"](), "live": "poll"}
+        else:
+            mcp["stdio_command"] = f"{sys.executable} -m memlayer.server --db {store.path}"
+            where = {"db_path": store.path, "live": "stream"}
         return _json({
-            "brand": BRAND, "version": __version__, "db_path": store.path,
-            "mcp": {
-                "server_name": BRAND["mcp_server_name"],
-                "tools": ["get_project_context", "search_memory", "get_memory_details", "save_memory",
-                          "update_memory", "analyze_gaps", "import_source", "create_project", "list_projects"],
-                "prompts": ["review_project"],
-                "stdio_command": f"{python} -m memlayer.server --db {store.path}",
-            },
+            "brand": BRAND, "version": __version__, **where, "mcp": mcp,
             "vocabulary": {
                 "kinds": m.RECORD_KINDS, "statuses": m.STATUSES, "verification": m.VERIFICATION,
                 "lifecycle": m.LIFECYCLE, "relation_types": m.RELATION_TYPES, "importance": list(m.IMPORTANCE),
@@ -298,11 +317,17 @@ def create_app(db_path: str, store: MemoryStore | None = None, poll_seconds: flo
         return StreamingResponse(stream(), media_type="text/event-stream",
                                  headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
+    async def revision(request: Request) -> JSONResponse:
+        """For pages that poll: the current fingerprint, and what happened since ``since``."""
+        since = request.query_params.get("since") or None
+        return _json({"revision": store.revision(), "activity": store.activity(None, 20, since) if since else [],
+                      "latest": (store.activity(None, 1) or [{"at": None}])[0]["at"]})
+
     async def not_found(request: Request) -> Response:
         return _json({"error": "Not found"}, 404)
 
     routes = [
-        Route("/", index),
+        Route("/app" if hosted else "/", index),
         Route("/api/meta", meta),
         Route("/api/projects", projects, methods=["GET", "POST"]),
         Route("/api/projects/{pid}", project, methods=["GET", "PATCH", "DELETE"]),
@@ -316,13 +341,15 @@ def create_app(db_path: str, store: MemoryStore | None = None, poll_seconds: flo
         Route("/api/sources/{sid}", source),
         Route("/api/activity", activity),
         Route("/api/search", search),
-        Route("/api/events", events),
+        Route("/api/revision", revision),
+        *([] if hosted else [Route("/api/events", events)]),
         Route("/api/{rest:path}", not_found),
-        Mount("/static", app=StaticFiles(directory=str(static_dir)), name="static"),
+        *([] if hosted else [Mount("/static", app=StaticFiles(directory=str(static_dir)), name="static")]),
     ]
-    app = Starlette(routes=routes, middleware=[Middleware(LocalOnly)],
+    app = Starlette(routes=routes, middleware=[] if hosted else [Middleware(LocalOnly)],
                     exception_handlers={m.NotFound: _not_found, m.ValidationError: _invalid})
-    app.state.store = store
+    if not hosted:
+        app.state.store = store
     return app
 
 
