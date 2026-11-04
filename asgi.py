@@ -1,4 +1,5 @@
-"""Vercel entry point: the whole hosted service as one ASGI app.
+"""Vercel entry point: the whole hosted service as one ASGI app. Vercel finds this file by name and sends it
+every request with its original path, so no rewrites are needed.
 
 Environment (set in the Vercel project):
   DATABASE_URL or POSTGRES_URL   Postgres connection string (the pooled one). Neon from the Vercel Marketplace
@@ -11,7 +12,7 @@ import os
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from memlayer.hosted import create_hosted_app  # noqa: E402
 
