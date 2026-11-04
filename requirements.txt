@@ -1,4 +1,0 @@
-# Installed by Vercel for api/index.py. Local development uses pyproject.toml.
-mcp>=1.10,<2
-starlette>=0.27
-psycopg[binary]>=3.2

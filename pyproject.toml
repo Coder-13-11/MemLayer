@@ -8,11 +8,10 @@ version = "0.1.0"
 description = "Local, model-independent memory and knowledge-gap layer for LLM clients, served over MCP"
 readme = "README.md"
 requires-python = ">=3.10"
-dependencies = ["mcp>=1.10,<2", "starlette>=0.27", "uvicorn>=0.30"]  # built and tested against the 1.x SDK API
+dependencies = ["mcp>=1.10,<2", "starlette>=0.27", "uvicorn>=0.30", "psycopg[binary]>=3.2"]  # built and tested against the 1.x SDK API
 
 [project.optional-dependencies]
 dev = ["pytest>=8", "anyio>=4"]
-postgres = ["psycopg[binary]>=3.2"]
 
 [project.scripts]
 memlayer = "memlayer.cli:main"

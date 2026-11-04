@@ -25,4 +25,4 @@ if not database_url:
     raise RuntimeError("Set DATABASE_URL (or connect Neon from the Vercel Marketplace) before deploying.")
 public_url = _setting("MEMLAYER_PUBLIC_URL") or f"https://{os.environ['VERCEL_PROJECT_PRODUCTION_URL']}"
 
-app, _accounts = create_hosted_app(database_url, public_url, signup_code=_setting("MEMLAYER_SIGNUP_CODE"))
+app = create_hosted_app(database_url, public_url, signup_code=_setting("MEMLAYER_SIGNUP_CODE"))[0]
