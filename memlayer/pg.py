@@ -79,13 +79,17 @@ class _Shared:
     _guard = threading.Lock()
 
     def __init__(self, url: str):
+        self.url = url
+        self.connect()
+        self.lock = threading.RLock()
+        self.ready_schemas: set[str] = set()
+
+    def connect(self) -> None:
         import psycopg
 
         # autocommit: the stores issue BEGIN/COMMIT themselves. prepare_threshold=None: no server-side
         # prepared statements, which transaction-mode poolers (Neon's pooled endpoint) cannot keep.
-        self.conn = psycopg.connect(url, autocommit=True, prepare_threshold=None)
-        self.lock = threading.RLock()
-        self.ready_schemas: set[str] = set()
+        self.conn = psycopg.connect(self.url, autocommit=True, prepare_threshold=None)
 
     @classmethod
     def get(cls, url: str) -> "_Shared":
@@ -133,7 +137,16 @@ class PgConnection:
     # transactions -----------------------------------------------------------------
 
     def begin(self, read_only: bool = False) -> None:
-        self.shared.conn.execute("BEGIN READ ONLY" if read_only else "BEGIN")
+        import psycopg
+
+        statement = "BEGIN READ ONLY" if read_only else "BEGIN"
+        try:
+            self.shared.conn.execute(statement)
+        except psycopg.OperationalError:
+            # The database dropped an idle connection (Neon suspends after a few idle minutes). Nothing has run
+            # in this transaction yet, so reconnecting and starting again is safe.
+            self.shared.connect()
+            self.shared.conn.execute(statement)
         self.shared.conn.execute(f'SET LOCAL search_path TO "{self.schema}"')
         self._in_tx = True
 
@@ -142,8 +155,13 @@ class PgConnection:
         self._in_tx = False
 
     def rollback(self) -> None:
-        self.shared.conn.execute("ROLLBACK")
+        import psycopg
+
         self._in_tx = False
+        try:
+            self.shared.conn.execute("ROLLBACK")
+        except psycopg.OperationalError:  # the connection died mid-transaction; the server already rolled back
+            pass
 
     # statements ---------------------------------------------------------------------
 

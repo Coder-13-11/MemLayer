@@ -195,3 +195,19 @@ Track college applications.
     assert by_key["A1"]["kind"] == "note" and by_key["A2"]["kind"] == "task" and by_key["D1"]["kind"] == "decision"
     assert "applications-and-statuses" in store.get_record(by_key["A1"]["id"])["tags"]
     assert any("Applications and statuses" in w and "1 item" in w for w in res["warnings"])
+
+
+def test_postgres_reconnects_after_idle_disconnect(store):
+    """Neon suspends idle databases and drops connections; the next request must simply work."""
+    if store.dialect != "pg":
+        pytest.skip("Postgres only")
+    import psycopg
+
+    store.create_project("Before the drop")
+    url = store.path.partition("#")[0]
+    pid = store.conn.shared.conn.info.backend_pid
+    with psycopg.connect(url, autocommit=True) as admin:
+        admin.execute("SELECT pg_terminate_backend(%s)", (pid,))
+    assert [p["name"] for p in store.list_projects()] == ["Before the drop"]
+    store.create_project("After the drop")
+    assert len(store.list_projects()) == 2
