@@ -1,6 +1,6 @@
 """The hosted service: one MCP address on the internet that ChatGPT, Claude, Gemini and Perplexity connect to.
 
-    memlayer hosted --public-url https://memory.example.com --data-dir /data
+    nexus hosted --public-url https://memory.example.com --data-dir /data
 
 Users paste ``<public-url>/mcp`` into their AI app. The app registers itself
 (OAuth dynamic client registration), sends the user to /consent to sign in or
@@ -39,7 +39,7 @@ from starlette.types import ASGIApp, Receive, Scope, Send
 from .accounts import MIN_PASSWORD, SESSION_TTL, AccountStore
 from .brand import BRAND
 from .models import ValidationError
-from .oauth import SCOPE, MemLayerOAuthProvider
+from .oauth import SCOPE, NexusOAuthProvider
 from .server import create_server
 from .web import create_app as create_web_app
 
@@ -172,7 +172,7 @@ class PerRequestSessions:
 class Dashboard:
     """Sends /app and /api/* to the dashboard for a signed-in browser, everything else to the site and MCP app.
 
-    Sign-in is a session cookie (only its hash is stored). Writes need the X-MemLayer header, which another site
+    Sign-in is a session cookie (only its hash is stored). Writes need the X-Nexus header, which another site
     cannot add without a CORS preflight that is never granted, and a matching Origin when the browser sends one.
     """
 
@@ -193,7 +193,7 @@ class Dashboard:
             return await response(scope, receive, send)
         if scope["method"] in self.WRITES:
             origin = request.headers.get("origin")
-            if request.headers.get("x-memlayer") != "1" or (origin and origin != self.origin):
+            if request.headers.get("x-nexus") != "1" or (origin and origin != self.origin):
                 return await JSONResponse({"error": "Cross-site request refused."}, status_code=403)(scope, receive, send)
         if path == "/app/":
             scope = {**scope, "path": "/app"}
@@ -209,7 +209,7 @@ def create_hosted_app(data_dir: str, public_url: str, *, signup_code: str | None
     public_url = public_url.rstrip("/")
     parsed = urlparse(public_url)
     accounts = accounts or AccountStore(data_dir)
-    provider = MemLayerOAuthProvider(accounts, public_url)
+    provider = NexusOAuthProvider(accounts, public_url)
     limiter = RateLimiter()
     beta_limiter = RateLimiter(limit=5, window=3600)
 
@@ -420,8 +420,8 @@ def create_hosted_app(data_dir: str, public_url: str, *, signup_code: str | None
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 PUBLIC_STATIC = ("site/", "fonts/", "js/", "app.css")  # the public site, fonts and the dashboard's code
-SESSION_COOKIE = "ml_session"
-_web_user: ContextVar[dict[str, Any] | None] = ContextVar("memlayer_web_user", default=None)
+SESSION_COOKIE = "nx_session"
+_web_user: ContextVar[dict[str, Any] | None] = ContextVar("nexus_web_user", default=None)
 
 
 def _landing(public_url: str) -> str:
@@ -507,11 +507,11 @@ def _expired_page() -> str:
 def main(argv: list[str] | None = None) -> None:
     import uvicorn
 
-    ap = argparse.ArgumentParser(description="Hosted memlayer service (MCP over HTTPS with sign-in)")
-    ap.add_argument("--public-url", default=os.environ.get("MEMLAYER_PUBLIC_URL"),
-                    help="Public https:// address users connect to ($MEMLAYER_PUBLIC_URL)")
-    ap.add_argument("--data-dir", default=os.environ.get("MEMLAYER_DATA_DIR", "~/.memlayer/hosted"),
-                    help="Where accounts.db and each user's memory live ($MEMLAYER_DATA_DIR)")
+    ap = argparse.ArgumentParser(description="Hosted nexus service (MCP over HTTPS with sign-in)")
+    ap.add_argument("--public-url", default=os.environ.get("NEXUS_PUBLIC_URL"),
+                    help="Public https:// address users connect to ($NEXUS_PUBLIC_URL)")
+    ap.add_argument("--data-dir", default=os.environ.get("NEXUS_DATA_DIR", "~/.nexus/hosted"),
+                    help="Where accounts.db and each user's memory live ($NEXUS_DATA_DIR)")
     ap.add_argument("--host", default=os.environ.get("HOST", "0.0.0.0"))
     ap.add_argument("--port", type=int, default=int(os.environ.get("PORT", "8000")))
     ap.add_argument("--list-beta", action="store_true", help="print the private-beta invite requests and exit")
@@ -521,8 +521,8 @@ def main(argv: list[str] | None = None) -> None:
             print(f"{r['created_at'][:16]}  {r['email']}  {r['topic']}")
         return
     if not args.public_url:
-        ap.error("--public-url (or MEMLAYER_PUBLIC_URL) is required, e.g. https://memory.example.com")
-    app, _ = create_hosted_app(args.data_dir, args.public_url, signup_code=os.environ.get("MEMLAYER_SIGNUP_CODE") or None)
+        ap.error("--public-url (or NEXUS_PUBLIC_URL) is required, e.g. https://memory.example.com")
+    app, _ = create_hosted_app(args.data_dir, args.public_url, signup_code=os.environ.get("NEXUS_SIGNUP_CODE") or None)
     uvicorn.run(app, host=args.host, port=args.port, proxy_headers=True, log_level="info")
 
 

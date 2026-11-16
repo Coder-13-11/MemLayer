@@ -9,7 +9,7 @@ from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 from mcp.shared.memory import create_connected_server_and_client_session
 
-from memlayer.server import create_server
+from nexus.server import create_server
 
 from .conftest import PROJECT, SAMPLES, dump
 
@@ -123,7 +123,7 @@ async def test_full_workflow_over_mcp(db_path):  # spec section 6, steps 1-7
 
 
 def dump_via_new_store(db_path):
-    from memlayer.store import MemoryStore
+    from nexus.store import MemoryStore
     s = MemoryStore(db_path)
     try:
         return dump(s)
@@ -133,7 +133,7 @@ def dump_via_new_store(db_path):
 
 async def test_real_stdio_server_persists_across_restart(db_path):  # acceptance 2, real subprocess
     params = StdioServerParameters(
-        command=sys.executable, args=["-m", "memlayer.server", "--db", str(db_path)],
+        command=sys.executable, args=["-m", "nexus.server", "--db", str(db_path)],
         env={**os.environ, "PYTHONPATH": str(ROOT)},
     )
     async with stdio_client(params) as (r, w), ClientSession(r, w) as s:

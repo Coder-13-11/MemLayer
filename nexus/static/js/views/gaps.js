@@ -11,7 +11,7 @@ export async function render(ctx) {
     const bySev = { high: [], medium: [], low: [] };
     gaps.forEach((g) => bySev[g.severity].push(g));
     const name = ctx.project?.name || "";
-    const server = ctx.meta?.mcp?.server_name || "memlayer";
+    const server = ctx.meta?.mcp?.server_name || "nexus";
 
     clear(el,
       h("div", { class: "page-head" },

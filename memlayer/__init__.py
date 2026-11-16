@@ -1,6 +1,4 @@
-"""memlayer: a local, model-independent memory and knowledge-gap layer for LLM clients."""
+"""Compatibility shim: the package was renamed to ``nexus``. Existing local MCP and dashboard configurations
+that run ``python -m memlayer.server`` or ``python -m memlayer.web`` keep working through these modules."""
 
-from .store import MemoryStore
-
-__all__ = ["MemoryStore"]
-__version__ = "0.1.0"
+from nexus import __version__  # noqa: F401

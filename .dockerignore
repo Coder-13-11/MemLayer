@@ -7,5 +7,5 @@ samples
 scripts
 .impeccable
 .claude
-memlayer.egg-info
+nexus.egg-info
 demo_output.txt

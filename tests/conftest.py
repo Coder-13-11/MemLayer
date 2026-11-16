@@ -5,8 +5,8 @@ from pathlib import Path
 
 import pytest
 
-from memlayer.importer import import_text
-from memlayer.store import MemoryStore
+from nexus.importer import import_text
+from nexus.store import MemoryStore
 
 SAMPLES = Path(__file__).resolve().parent.parent / "samples"
 PROJECT = "Environmental AI Research"
@@ -17,17 +17,17 @@ def anyio_backend():
     return "asyncio"
 
 
-PG_URL = os.environ.get("MEMLAYER_TEST_PG_URL")  # e.g. postgresql://memlayer@127.0.0.1:54329/memlayer_test
+PG_URL = os.environ.get("NEXUS_TEST_PG_URL")  # e.g. postgresql://nexus@127.0.0.1:54329/nexus_test
 
 
 @pytest.fixture(params=["sqlite", "pg"])
 def db_path(request, tmp_path):
-    """Every store test runs on SQLite, and on Postgres too when MEMLAYER_TEST_PG_URL is set."""
+    """Every store test runs on SQLite, and on Postgres too when NEXUS_TEST_PG_URL is set."""
     if request.param == "sqlite":
         yield tmp_path / "memory.db"
         return
     if not PG_URL:
-        pytest.skip("set MEMLAYER_TEST_PG_URL to run the Postgres variant")
+        pytest.skip("set NEXUS_TEST_PG_URL to run the Postgres variant")
     schema = f"t_{uuid.uuid4().hex[:12]}"
     yield f"{PG_URL}#{schema}"
     import psycopg

@@ -14,7 +14,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from memlayer.accounts import AccountStore  # noqa: E402
+from nexus.accounts import AccountStore  # noqa: E402
 
 # Parents first, so foreign keys hold. records.superseded_by is filled in afterwards because it points at records.
 TABLES = ["projects", "sources", "records", "evidence", "relations", "record_history"]

@@ -91,7 +91,7 @@ CREATE TABLE IF NOT EXISTS web_sessions (
     expires_at INTEGER NOT NULL
 );
 """
-ACCOUNTS_SCHEMA = "memlayer_accounts"  # Postgres schema holding the tables above
+ACCOUNTS_SCHEMA = "nexus_accounts"  # Postgres schema holding the tables above
 
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 MIN_PASSWORD = 10
@@ -129,7 +129,7 @@ _DUMMY_HASH = hash_password(secrets.token_hex(8))
 class AccountStore:
     def __init__(self, location: str | os.PathLike):
         """``location`` is a folder (accounts.db plus one memory file per user) or a postgres:// URL (accounts
-        in the memlayer_accounts schema plus one schema per user)."""
+        in the nexus_accounts schema plus one schema per user)."""
         self.location = str(location)
         self._stores: dict[str, MemoryStore] = {}
         if is_pg_url(self.location):
@@ -334,7 +334,7 @@ class AccountStore:
             return row["grant_id"]
 
     def issue_tokens(self, grant_id: str) -> dict[str, Any]:
-        access, refresh = "mla_" + secrets.token_urlsafe(32), "mlr_" + secrets.token_urlsafe(32)
+        access, refresh = "nxa_" + secrets.token_urlsafe(32), "nxr_" + secrets.token_urlsafe(32)
         t = int(time.time())
         with self._tx() as c:
             c.executemany("INSERT INTO tokens (token_hash, kind, grant_id, expires_at) VALUES (?, ?, ?, ?)",

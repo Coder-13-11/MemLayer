@@ -27,7 +27,7 @@ from .accounts import AccountStore
 SCOPE = "memory"
 
 
-class MemLayerOAuthProvider:
+class NexusOAuthProvider:
     def __init__(self, accounts: AccountStore, public_url: str):
         self.accounts = accounts
         self.public_url = public_url.rstrip("/")

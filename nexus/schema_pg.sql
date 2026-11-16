@@ -1,20 +1,21 @@
--- memlayer schema v1
--- Original source text (sources) is kept separate from structured records
--- extracted from it (records). Records link to each other through typed
--- relations, and every change to a record snapshots the prior version into
--- record_history.
+-- nexus schema v1, Postgres edition. Same tables and meaning as schema.sql; each account gets its own schema,
+-- so these statements run with search_path set to that schema. Differences from SQLite:
+--   * seq columns stand in for SQLite's rowid (insertion order);
+--   * full-text search uses generated tsvector columns with GIN indexes instead of FTS5 tables and triggers;
+--   * case-insensitive project names use a unique index on lower(name).
 
 CREATE TABLE IF NOT EXISTS projects (
     id          TEXT PRIMARY KEY,
-    name        TEXT NOT NULL UNIQUE COLLATE NOCASE,
+    name        TEXT NOT NULL,
     description TEXT NOT NULL DEFAULT '',
     objective   TEXT NOT NULL DEFAULT '',
     created_at  TEXT NOT NULL,
     updated_at  TEXT NOT NULL
 );
+CREATE UNIQUE INDEX IF NOT EXISTS projects_name ON projects (lower(name));
 
--- Immutable original material: pasted conversations, LLM outputs, documents.
 CREATE TABLE IF NOT EXISTS sources (
+    seq             BIGSERIAL,
     id              TEXT PRIMARY KEY,
     project_id      TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
     kind            TEXT NOT NULL CHECK (kind IN ('conversation', 'llm_output', 'document', 'manual_note', 'web_page')),
@@ -25,39 +26,46 @@ CREATE TABLE IF NOT EXISTS sources (
     conversation_id TEXT,
     content_sha256  TEXT NOT NULL,
     imported_at     TEXT NOT NULL,
+    fts             tsvector GENERATED ALWAYS AS (
+                        setweight(to_tsvector('english', title), 'A') || to_tsvector('english', content)) STORED,
     UNIQUE (project_id, content_sha256)
 );
+CREATE INDEX IF NOT EXISTS sources_fts ON sources USING gin (fts);
 
--- Structured knowledge: findings, decisions, assumptions, questions, ...
--- verification = how well-supported the claim is.
--- lifecycle    = whether the record still applies.
 CREATE TABLE IF NOT EXISTS records (
+    seq             BIGSERIAL,
     id              TEXT PRIMARY KEY,
     project_id      TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
     kind            TEXT NOT NULL CHECK (kind IN ('objective', 'finding', 'decision', 'assumption', 'hypothesis',
                                                   'evidence', 'question', 'task', 'note')),
     title           TEXT NOT NULL,
     content         TEXT NOT NULL DEFAULT '',
-    subject         TEXT,            -- optional normalized topic key, e.g. "sentinel2.revisit_days"
-    value           TEXT,            -- optional claimed value for that subject, e.g. "5"
+    subject         TEXT,
+    value           TEXT,
     importance      INTEGER NOT NULL DEFAULT 2 CHECK (importance BETWEEN 1 AND 3),
     verification    TEXT NOT NULL DEFAULT 'unverified'
                     CHECK (verification IN ('unverified', 'evidence_supported', 'challenged', 'contradicted')),
     lifecycle       TEXT NOT NULL DEFAULT 'active'
                     CHECK (lifecycle IN ('active', 'superseded', 'resolved', 'retracted')),
     superseded_by   TEXT REFERENCES records(id) ON DELETE SET NULL,
-    tags            TEXT NOT NULL DEFAULT '[]',   -- JSON array
-    origin_model    TEXT,            -- which model/app produced the claim (chatgpt, claude, human, ...)
+    tags            TEXT NOT NULL DEFAULT '[]',
+    origin_model    TEXT,
     conversation_id TEXT,
-    created_by      TEXT,            -- which client wrote the row
+    created_by      TEXT,
     source_id       TEXT REFERENCES sources(id) ON DELETE SET NULL,
-    source_excerpt  TEXT,            -- the exact span of the source this record came from
+    source_excerpt  TEXT,
     version         INTEGER NOT NULL DEFAULT 1,
     created_at      TEXT NOT NULL,
-    updated_at      TEXT NOT NULL
+    updated_at      TEXT NOT NULL,
+    fts             tsvector GENERATED ALWAYS AS (
+                        setweight(to_tsvector('english', title), 'A')
+                        || setweight(to_tsvector('english', content), 'B')
+                        || to_tsvector('simple', coalesce(subject, '') || ' ' || coalesce(value, '') || ' ' || tags)
+                    ) STORED
 );
 CREATE INDEX IF NOT EXISTS records_project ON records(project_id, lifecycle);
 CREATE INDEX IF NOT EXISTS records_subject ON records(project_id, subject);
+CREATE INDEX IF NOT EXISTS records_fts ON records USING gin (fts);
 
 CREATE TABLE IF NOT EXISTS evidence (
     id          TEXT PRIMARY KEY,
@@ -66,14 +74,14 @@ CREATE TABLE IF NOT EXISTS evidence (
     citation    TEXT,
     excerpt     TEXT,
     source_id   TEXT REFERENCES sources(id) ON DELETE SET NULL,
-    checked_at  TEXT,                -- when someone actually checked this evidence
+    checked_at  TEXT,
     added_at    TEXT NOT NULL,
     added_by    TEXT
 );
 CREATE INDEX IF NOT EXISTS evidence_record ON evidence(record_id);
 
--- Directed: from_id <type> to_id, e.g. decision depends_on finding.
 CREATE TABLE IF NOT EXISTS relations (
+    seq         BIGSERIAL,
     id          TEXT PRIMARY KEY,
     project_id  TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
     from_id     TEXT NOT NULL REFERENCES records(id) ON DELETE CASCADE,
@@ -89,41 +97,12 @@ CREATE TABLE IF NOT EXISTS relations (
 CREATE INDEX IF NOT EXISTS relations_to ON relations(to_id);
 
 CREATE TABLE IF NOT EXISTS record_history (
-    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    id            BIGSERIAL PRIMARY KEY,
     record_id     TEXT NOT NULL REFERENCES records(id) ON DELETE CASCADE,
     version       INTEGER NOT NULL,
-    snapshot      TEXT NOT NULL,      -- JSON of the row as it was before the change
+    snapshot      TEXT NOT NULL,
     change_reason TEXT NOT NULL,
     changed_by    TEXT,
     changed_at    TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS history_record ON record_history(record_id);
-
--- Full-text search (external-content FTS5 tables kept in sync by triggers).
-CREATE VIRTUAL TABLE IF NOT EXISTS records_fts USING fts5(
-    title, content, subject, value, tags, content='records', content_rowid='rowid'
-);
-CREATE TRIGGER IF NOT EXISTS records_ai AFTER INSERT ON records BEGIN
-    INSERT INTO records_fts(rowid, title, content, subject, value, tags)
-    VALUES (new.rowid, new.title, new.content, coalesce(new.subject, ''), coalesce(new.value, ''), new.tags);
-END;
-CREATE TRIGGER IF NOT EXISTS records_ad AFTER DELETE ON records BEGIN
-    INSERT INTO records_fts(records_fts, rowid, title, content, subject, value, tags)
-    VALUES ('delete', old.rowid, old.title, old.content, coalesce(old.subject, ''), coalesce(old.value, ''), old.tags);
-END;
-CREATE TRIGGER IF NOT EXISTS records_au AFTER UPDATE ON records BEGIN
-    INSERT INTO records_fts(records_fts, rowid, title, content, subject, value, tags)
-    VALUES ('delete', old.rowid, old.title, old.content, coalesce(old.subject, ''), coalesce(old.value, ''), old.tags);
-    INSERT INTO records_fts(rowid, title, content, subject, value, tags)
-    VALUES (new.rowid, new.title, new.content, coalesce(new.subject, ''), coalesce(new.value, ''), new.tags);
-END;
-
-CREATE VIRTUAL TABLE IF NOT EXISTS sources_fts USING fts5(
-    title, content, content='sources', content_rowid='rowid'
-);
-CREATE TRIGGER IF NOT EXISTS sources_ai AFTER INSERT ON sources BEGIN
-    INSERT INTO sources_fts(rowid, title, content) VALUES (new.rowid, new.title, new.content);
-END;
-CREATE TRIGGER IF NOT EXISTS sources_ad AFTER DELETE ON sources BEGIN
-    INSERT INTO sources_fts(sources_fts, rowid, title, content) VALUES ('delete', old.rowid, old.title, old.content);
-END;

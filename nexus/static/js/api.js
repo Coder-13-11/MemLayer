@@ -1,4 +1,4 @@
-// Thin JSON client. Writes carry X-MemLayer, which the server requires.
+// Thin JSON client. Writes carry X-Nexus, which the server requires.
 
 async function request(method, path, body) {
   const opts = { method, headers: {} };
@@ -6,7 +6,7 @@ async function request(method, path, body) {
     opts.headers["Content-Type"] = "application/json";
     opts.body = JSON.stringify(body);
   }
-  if (method !== "GET") opts.headers["X-MemLayer"] = "1";
+  if (method !== "GET") opts.headers["X-Nexus"] = "1";
   const res = await fetch(path, opts);
   let data = null;
   try { data = await res.json(); } catch { /* empty body */ }

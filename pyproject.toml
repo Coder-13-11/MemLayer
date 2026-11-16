@@ -3,7 +3,7 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "memlayer"
+name = "nexus"
 version = "0.1.0"
 description = "Local, model-independent memory and knowledge-gap layer for LLM clients, served over MCP"
 readme = "README.md"
@@ -14,16 +14,16 @@ dependencies = ["mcp>=1.10,<2", "starlette>=0.27", "uvicorn>=0.30", "psycopg[bin
 dev = ["pytest>=8", "anyio>=4"]
 
 [project.scripts]
-memlayer = "memlayer.cli:main"
-memlayer-server = "memlayer.server:main"
-memlayer-web = "memlayer.web:main"
-memlayer-hosted = "memlayer.hosted:main"
+nexus = "nexus.cli:main"
+nexus-server = "nexus.server:main"
+nexus-web = "nexus.web:main"
+nexus-hosted = "nexus.hosted:main"
 
 [tool.setuptools]
-packages = ["memlayer"]
+packages = ["nexus", "memlayer"]
 
 [tool.setuptools.package-data]
-memlayer = ["schema.sql", "schema_pg.sql", "accounts_pg.sql", "static/*", "static/**/*"]
+nexus = ["schema.sql", "schema_pg.sql", "accounts_pg.sql", "static/*", "static/**/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

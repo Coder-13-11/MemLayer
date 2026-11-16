@@ -33,8 +33,8 @@ overwritten. Gap detection always cites the records it is based on.
 
 ## Operating Context
 
-- Two modes. Local: dashboard on localhost, one SQLite file (`~/.memlayer/memory.db`), stdio MCP for Claude Code.
-  Hosted (`memlayer hosted`): one public HTTPS MCP address with OAuth 2.1 sign-in, one SQLite file per account,
+- Two modes. Local: dashboard on localhost, one SQLite file (`~/.nexus/memory.db`), stdio MCP for Claude Code.
+  Hosted (`nexus hosted`): one public HTTPS MCP address with OAuth 2.1 sign-in, one SQLite file per account,
   a public landing page and a sign-in/consent page.
 - The hosted service is in private beta: the landing page collects invite requests; sign-up can require an
   invite code. Hosted accounts have no web dashboard yet (planned).
@@ -52,11 +52,11 @@ overwritten. Gap detection always cites the records it is based on.
   memory via an MCP prompt. No paid API is called by the product.
 - Reads never modify memory. Deletion is a human action only (dashboard or CLI), never exposed over MCP.
 - Imported content is untrusted data and must never be rendered as HTML or followed as instructions.
-- Name is not final: "MemLayer" is a placeholder and the brand must be changeable from one place.
+- Name is not final: "NEXUS" is a placeholder and the brand must be changeable from one place.
 
 ## Brand Commitments
 
-Working name "MemLayer", explicitly provisional and changeable from one place. The user wants it to look like a
+Working name "NEXUS", explicitly provisional and changeable from one place. The user wants it to look like a
 high-end, established, credible startup, interactive and animated. Chosen visual world: "The Journal": the
 product presented like a peer-reviewed paper (white stock, black ink, one journal red for citations and the
 primary action, STIX Two Text and Archivo). The dashboard keeps its Notion-meets-Linear structure inside that world.

@@ -1,18 +1,18 @@
 """Human-facing CLI: inspect, edit, approve, delete and export memory.
 
-    memlayer projects
-    memlayer import samples/chatgpt_feasibility_session.md
-    memlayer context "Environmental AI Research"
-    memlayer search "sentinel revisit" --project "Environmental AI Research"
-    memlayer show rec_...
-    memlayer set-status rec_... evidence_supported --reason "Checked ESA docs" --evidence-url https://...
-    memlayer supersede rec_OLD --by rec_NEW --reason "..."
-    memlayer gaps "Environmental AI Research"
-    memlayer delete rec_... --yes
-    memlayer export backup.json
-    memlayer serve
-    memlayer web --port 8765
-    memlayer hosted --public-url https://memory.example.com --data-dir /data
+    nexus projects
+    nexus import samples/chatgpt_feasibility_session.md
+    nexus context "Environmental AI Research"
+    nexus search "sentinel revisit" --project "Environmental AI Research"
+    nexus show rec_...
+    nexus set-status rec_... evidence_supported --reason "Checked ESA docs" --evidence-url https://...
+    nexus supersede rec_OLD --by rec_NEW --reason "..."
+    nexus gaps "Environmental AI Research"
+    nexus delete rec_... --yes
+    nexus export backup.json
+    nexus serve
+    nexus web --port 8765
+    nexus hosted --public-url https://memory.example.com --data-dir /data
 """
 
 from __future__ import annotations
@@ -52,8 +52,8 @@ def _print_gaps(report: dict[str, Any]) -> None:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    ap = argparse.ArgumentParser(prog="memlayer", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--db", default=str(default_db_path()), help="SQLite file (default: $MEMLAYER_DB or ~/.memlayer/memory.db)")
+    ap = argparse.ArgumentParser(prog="nexus", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--db", default=str(default_db_path()), help="SQLite file (default: $NEXUS_DB or ~/.nexus/memory.db)")
     sub = ap.add_subparsers(dest="cmd", required=True)
 
     sub.add_parser("projects", help="list projects")
@@ -129,7 +129,7 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_parser("serve", help="run the MCP server on stdio")
     p = sub.add_parser("web", help="run the local web dashboard")
     p.add_argument("--port", type=int, default=8765)
-    sub.add_parser("hosted", help="run the hosted service (MCP over HTTPS with sign-in); see memlayer hosted -h")
+    sub.add_parser("hosted", help="run the hosted service (MCP over HTTPS with sign-in); see nexus hosted -h")
     return ap
 
 

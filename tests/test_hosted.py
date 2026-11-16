@@ -18,8 +18,8 @@ from mcp.client.streamable_http import streamable_http_client
 from mcp.shared._httpx_utils import create_mcp_http_client
 from mcp.shared.auth import OAuthClientMetadata
 
-from memlayer.accounts import AccountStore, digest
-from memlayer.hosted import create_hosted_app
+from nexus.accounts import AccountStore, digest
+from nexus.hosted import create_hosted_app
 
 pytestmark = pytest.mark.anyio
 CALLBACK = "http://localhost:3030/callback"
@@ -219,7 +219,7 @@ async def test_invite_code_gates_signup(invite_only):
     async with connect(base, ok) as (r, w, _):
         async with ClientSession(r, w) as s:
             await s.initialize()
-    assert storage.tokens.access_token.startswith("mla_")
+    assert storage.tokens.access_token.startswith("nxa_")
 
 
 async def test_revoked_access_stops_working(hosted):
@@ -327,17 +327,17 @@ async def test_strict_discovery_and_public_client_without_secret(hosted):
             "Authorization": f"Bearer {tok.json()['access_token']}", "Accept": "application/json, text/event-stream"},
             json={"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {
                 "protocolVersion": "2025-06-18", "capabilities": {}, "clientInfo": {"name": "t", "version": "1"}}})
-        assert listed.status_code == 200 and "memlayer" in listed.text
+        assert listed.status_code == 200 and "nexus" in listed.text
 
 
-@pytest.mark.skipif(not __import__("os").environ.get("MEMLAYER_TEST_PG_URL"), reason="needs MEMLAYER_TEST_PG_URL")
+@pytest.mark.skipif(not __import__("os").environ.get("NEXUS_TEST_PG_URL"), reason="needs NEXUS_TEST_PG_URL")
 def test_accounts_on_postgres_keep_users_apart():
     import os
     import uuid
 
     import psycopg
 
-    url = os.environ["MEMLAYER_TEST_PG_URL"]
+    url = os.environ["NEXUS_TEST_PG_URL"]
     acc = AccountStore(url)
     a = acc.create_user(f"a-{uuid.uuid4().hex[:6]}@Example.com", "a very good password")
     b = acc.create_user(f"b-{uuid.uuid4().hex[:6]}@example.com", "a very good password")
@@ -359,7 +359,7 @@ def test_accounts_on_postgres_keep_users_apart():
         with psycopg.connect(url, autocommit=True) as c:
             for u in (a, b):
                 c.execute(f'DROP SCHEMA IF EXISTS "u_{u["id"][4:]}" CASCADE')
-                c.execute("DELETE FROM memlayer_accounts.users WHERE id = %s", (u["id"],))
+                c.execute("DELETE FROM nexus_accounts.users WHERE id = %s", (u["id"],))
 
 
 async def test_dashboard_sign_in_and_isolation(hosted):
@@ -385,8 +385,8 @@ async def test_dashboard_sign_in_and_isolation(hosted):
         assert [p["name"] for p in (await a.get("/api/projects")).json()["projects"]] == ["Alice's project"]
         assert (await a.post("/api/projects", json={"name": "No header"})).status_code == 403
         assert (await a.post("/api/projects", json={"name": "Cross"}, headers={
-            "X-MemLayer": "1", "Origin": "https://evil.example"})).status_code == 403
-        assert (await a.post("/api/projects", json={"name": "Second"}, headers={"X-MemLayer": "1"})).status_code == 201
+            "X-Nexus": "1", "Origin": "https://evil.example"})).status_code == 403
+        assert (await a.post("/api/projects", json={"name": "Second"}, headers={"X-Nexus": "1"})).status_code == 201
         assert (await a.get("/api/revision")).json()["revision"]
         assert (await a.get("/api/events")).status_code == 404  # hosted pages poll instead
         await a.post("/logout")

@@ -11,9 +11,13 @@ SCHEMA_VERSION = 1
 
 
 def default_db_path() -> Path:
-    """MEMLAYER_DB if set, otherwise ~/.memlayer/memory.db (local by default)."""
-    env = os.environ.get("MEMLAYER_DB")
-    return Path(env).expanduser() if env else Path.home() / ".memlayer" / "memory.db"
+    """NEXUS_DB if set, otherwise ~/.nexus/memory.db (local by default)."""
+    env = os.environ.get("NEXUS_DB") or os.environ.get("MEMLAYER_DB")
+    if env:
+        return Path(env).expanduser()
+    current, legacy = Path.home() / ".nexus" / "memory.db", Path.home() / ".memlayer" / "memory.db"
+    # Installations from before the rename keep using their existing file until it is moved by hand.
+    return legacy if legacy.exists() and not current.exists() else current
 
 
 def connect(path: str | os.PathLike) -> sqlite3.Connection:
@@ -35,6 +39,6 @@ def _migrate(conn: sqlite3.Connection) -> None:
     current = conn.execute("PRAGMA user_version").fetchone()[0]
     if current >= SCHEMA_VERSION:
         return
-    schema = resources.files("memlayer").joinpath("schema.sql").read_text(encoding="utf-8")
+    schema = resources.files("nexus").joinpath("schema.sql").read_text(encoding="utf-8")
     conn.executescript(schema)
     conn.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")

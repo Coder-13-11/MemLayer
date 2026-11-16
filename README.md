@@ -1,12 +1,12 @@
-# MemLayer — shared AI memory and knowledge-gap layer (prototype v0.3)
+# NEXUS — shared AI memory and knowledge-gap layer (prototype v0.3)
 
-> "MemLayer" is a working name. Rename the product everywhere with one setting: see *Renaming*.
+> "NEXUS" is a working name. Rename the product everywhere with one setting: see *Renaming*.
 
 A local, model-independent project memory that any MCP-compatible AI client can read from and write to,
 with a deterministic analyzer that finds contradictions, missing evidence, unexamined assumptions,
 broken dependencies and open questions — each one citing the records it is based on.
 
-- **Local-first:** one SQLite file (`~/.memlayer/memory.db` by default). No hosted services, paid APIs or LLM calls.
+- **Local-first:** one SQLite file (`~/.nexus/memory.db` by default). No hosted services, paid APIs or LLM calls.
 - **Evidence-aware:** every record has a verification status, an origin model and conversation, a link to the
   verbatim source text it came from, attached evidence with `checked_at` dates, and a version history.
 - **Non-destructive:** corrections and supersessions snapshot the previous version. Read tools run under
@@ -33,11 +33,11 @@ pytest -q
 ## Web dashboard
 
 ```bash
-memlayer web
+nexus web
 ```
 
 Then open <http://127.0.0.1:8765>. It reads and writes the same database as the MCP server
-(`~/.memlayer/memory.db`, or `--db` / `MEMLAYER_DB`), so anything an AI client saves shows up in the open
+(`~/.nexus/memory.db`, or `--db` / `NEXUS_DB`), so anything an AI client saves shows up in the open
 page within about a second, with a notice naming the model that saved it.
 
 - **Sidebar:** projects, each with a small *trust bar* (how much of what was saved is evidence-supported),
@@ -57,7 +57,7 @@ page within about a second, with a notice naming the model that saved it.
 - **Activity:** everything saved, changed, linked or imported, by any client.
 
 The dashboard listens on 127.0.0.1 only. It refuses requests whose `Host` is not local (a DNS-rebinding
-guard), and every write must carry an `X-MemLayer` header, which a cross-site page cannot send without a
+guard), and every write must carry an `X-Nexus` header, which a cross-site page cannot send without a
 CORS approval this server never gives. Stored text is always rendered as text, never as HTML.
 
 ### AI review ("AI-powered" detection, without an API key)
@@ -66,7 +66,7 @@ The built-in analyzer follows fixed rules. For contradictions that only show in 
 provides a `review_project` prompt. In Claude Code:
 
 ```
-/mcp__memlayer__review_project "Environmental AI Research"
+/mcp__nexus__review_project "Environmental AI Research"
 ```
 
 The model reads the project through the memory tools and records each conflict it is confident about as a
@@ -77,26 +77,26 @@ in your own AI client; the product itself calls no paid API.
 ## Quick tour (CLI)
 
 ```bash
-memlayer import samples/chatgpt_feasibility_session.md
+nexus import samples/chatgpt_feasibility_session.md
 ```
 ```bash
-memlayer import samples/followup_notes.md
+nexus import samples/followup_notes.md
 ```
 ```bash
-memlayer context "Environmental AI Research"
+nexus context "Environmental AI Research"
 ```
 ```bash
-memlayer gaps "Environmental AI Research"
+nexus gaps "Environmental AI Research"
 ```
 ```bash
-memlayer search "revisit" --project "Environmental AI Research"
+nexus search "revisit" --project "Environmental AI Research"
 ```
 ```bash
-memlayer show rec_XXXXXXXXXXXX
+nexus show rec_XXXXXXXXXXXX
 ```
 
 Human-control commands: `set-status` (approve or reject: `evidence_supported`, `challenged`, `retracted`, ...),
-`edit`, `supersede --by`, `delete --yes`, `export out.json`. Use `--db PATH` or `MEMLAYER_DB` to choose the file.
+`edit`, `supersede --by`, `delete --yes`, `export out.json`. Use `--db PATH` or `NEXUS_DB` to choose the file.
 
 ## End-to-end demo over MCP
 
@@ -119,7 +119,7 @@ The server speaks MCP over **stdio only**: it opens no network port.
 **Claude Code** (tested path: stdio MCP server):
 
 ```bash
-claude mcp add memlayer -- /ABSOLUTE/PATH/.venv/bin/python -m memlayer.server --db ~/.memlayer/memory.db
+claude mcp add nexus -- /ABSOLUTE/PATH/.venv/bin/python -m nexus.server --db ~/.nexus/memory.db
 ```
 
 **Claude Desktop**: add to `claude_desktop_config.json`:
@@ -127,16 +127,16 @@ claude mcp add memlayer -- /ABSOLUTE/PATH/.venv/bin/python -m memlayer.server --
 ```json
 {
   "mcpServers": {
-    "memlayer": {
+    "nexus": {
       "command": "/ABSOLUTE/PATH/.venv/bin/python",
-      "args": ["-m", "memlayer.server", "--db", "/Users/you/.memlayer/memory.db"]
+      "args": ["-m", "nexus.server", "--db", "/Users/you/.nexus/memory.db"]
     }
   }
 }
 ```
 
 **ChatGPT, Claude on the web, Gemini and Perplexity** only reach MCP servers on the internet over HTTPS. Use
-the hosted service below for those. Locally you can still paste a conversation into `memlayer import`.
+the hosted service below for those. Locally you can still paste a conversation into `nexus import`.
 
 Neither client saves or retrieves memories automatically on every turn. The model decides when to call a tool,
 guided by the server's instructions ("call `get_project_context` at the start of work on a project ..."). Asking
@@ -144,10 +144,10 @@ explicitly ("check project memory for Environmental AI Research") is the reliabl
 
 ## Hosted service (for ChatGPT, Claude.ai, Gemini, Perplexity)
 
-`memlayer hosted` runs the same tools as an internet-facing MCP server with sign-in, for many users:
+`nexus hosted` runs the same tools as an internet-facing MCP server with sign-in, for many users:
 
 ```bash
-memlayer hosted --public-url https://memory.example.com --data-dir /data --port 8000
+nexus hosted --public-url https://memory.example.com --data-dir /data --port 8000
 ```
 
 Users paste `https://memory.example.com/mcp` into their AI app. The app registers itself (OAuth dynamic client
@@ -156,14 +156,14 @@ then calls the tools with a bearer token. Nothing else needs configuring per use
 
 | Setting | Meaning |
 |---|---|
-| `MEMLAYER_PUBLIC_URL` / `--public-url` | The `https://` address users connect to (plain `http` only for localhost) |
-| `MEMLAYER_DATA_DIR` / `--data-dir` | `accounts.db` plus one `users/<id>/memory.db` per user |
-| `MEMLAYER_SIGNUP_CODE` | If set, creating an account needs this invite code |
+| `NEXUS_PUBLIC_URL` / `--public-url` | The `https://` address users connect to (plain `http` only for localhost) |
+| `NEXUS_DATA_DIR` / `--data-dir` | `accounts.db` plus one `users/<id>/memory.db` per user |
+| `NEXUS_SIGNUP_CODE` | If set, creating an account needs this invite code |
 | `PORT`, `HOST` | Listen address (default `0.0.0.0:8000`) |
 
 How it works and what protects it:
 
-- **OAuth 2.1 server** (`memlayer/oauth.py`) on the MCP SDK's endpoints: `/register`, `/authorize`, `/token`,
+- **OAuth 2.1 server** (`nexus/oauth.py`) on the MCP SDK's endpoints: `/register`, `/authorize`, `/token`,
   `/revoke`, plus authorization-server and protected-resource metadata. PKCE is required. Tokens are bound to
   the `/mcp` resource and every MCP request is checked against it.
 - **Per-user isolation:** each account has its own SQLite file, chosen from the verified token on every tool call.
@@ -175,20 +175,20 @@ How it works and what protects it:
   (10 per 15 minutes per IP and per email) and cannot be framed.
 - **Revocation:** each approval is a grant; revoking it kills its tokens immediately.
 
-Public pages: `/` is the landing page (`memlayer/static/site/`), with an interactive demo and a private-beta
+Public pages: `/` is the landing page (`nexus/static/site/`), with an interactive demo and a private-beta
 invite form; requests are stored in `accounts.db`. List them with:
 
 ```bash
-memlayer hosted --list-beta --data-dir /data
+nexus hosted --list-beta --data-dir /data
 ```
 
-Fonts (STIX Two Text and Archivo, SIL Open Font License) are self-hosted from `memlayer/static/fonts/`, so
+Fonts (STIX Two Text and Archivo, SIL Open Font License) are self-hosted from `nexus/static/fonts/`, so
 visitors' browsers make no third-party requests.
 
 Deploy: a `Dockerfile` and `fly.toml.example` are included. The platform must terminate HTTPS. Keep one
 instance with a persistent volume at `/data`, because accounts and memory are files on that volume.
 
-Phase 1 limits: no dashboard for hosted accounts yet (the local `memlayer web` is single-user), no password
+Phase 1 limits: no dashboard for hosted accounts yet (the local `nexus web` is single-user), no password
 reset or email verification, no account export/delete page, the rate limiter is per process, and no backups are
 configured. These are the next phases.
 
@@ -236,7 +236,7 @@ projects ─┬─ sources        verbatim original text (sha256-deduplicated, n
 
 ## Gap analyzer
 
-`memlayer/gaps.py` is a pure function over a project snapshot. Rules:
+`nexus/gaps.py` is a pure function over a project snapshot. Rules:
 
 | Gap type | Rule | Confidence |
 |---|---|---|
@@ -301,20 +301,20 @@ and the full spec workflow runs over MCP.
 ## Layout
 
 ```
-memlayer/schema.sql   tables, FTS5 indexes and triggers
-memlayer/store.py     MemoryStore — the only module that writes SQL (swap point for another backend)
-memlayer/context.py   get_project_context ranking (pure)
-memlayer/gaps.py      gap analyzer (pure)
-memlayer/importer.py  deterministic structured-markdown import
-memlayer/server.py    MCP server (official Python SDK, FastMCP); stdio locally
-memlayer/hosted.py    hosted service: MCP over HTTP with sign-in pages, security headers
-memlayer/oauth.py     OAuth 2.1 authorization server provider
-memlayer/accounts.py  users, OAuth clients, grants, hashed tokens, beta requests; one memory file per user
-memlayer/static/site/ public landing page and sign-in styles (journal design)
-memlayer/cli.py       human control: inspect, approve, edit, supersede, delete, export, `web`
-memlayer/web.py       dashboard: Starlette JSON API, live change stream (SSE), static app
-memlayer/brand.py     the product name and tagline, in one place
-memlayer/static/      no-build frontend: app.css, js/ (shell, panel, palette, views/, graph)
+nexus/schema.sql   tables, FTS5 indexes and triggers
+nexus/store.py     MemoryStore — the only module that writes SQL (swap point for another backend)
+nexus/context.py   get_project_context ranking (pure)
+nexus/gaps.py      gap analyzer (pure)
+nexus/importer.py  deterministic structured-markdown import
+nexus/server.py    MCP server (official Python SDK, FastMCP); stdio locally
+nexus/hosted.py    hosted service: MCP over HTTP with sign-in pages, security headers
+nexus/oauth.py     OAuth 2.1 authorization server provider
+nexus/accounts.py  users, OAuth clients, grants, hashed tokens, beta requests; one memory file per user
+nexus/static/site/ public landing page and sign-in styles (journal design)
+nexus/cli.py       human control: inspect, approve, edit, supersede, delete, export, `web`
+nexus/web.py       dashboard: Starlette JSON API, live change stream (SSE), static app
+nexus/brand.py     the product name and tagline, in one place
+nexus/static/      no-build frontend: app.css, js/ (shell, panel, palette, views/, graph)
 samples/              synthetic test data
 scripts/demo.py       end-to-end MCP demo
 tests/                pytest suite
@@ -322,13 +322,13 @@ tests/                pytest suite
 
 ## Renaming
 
-The name lives in `memlayer/brand.py`. Override it without touching code:
+The name lives in `nexus/brand.py`. Override it without touching code:
 
 ```bash
-MEMLAYER_BRAND_NAME="Cortex" MEMLAYER_BRAND_TAGLINE="Your research, remembered" memlayer web
+NEXUS_BRAND_NAME="Cortex" NEXUS_BRAND_TAGLINE="Your research, remembered" nexus web
 ```
 
-The dashboard title, sidebar and page `<title>` follow it. The Python package and MCP server name (`memlayer`)
+The dashboard title, sidebar and page `<title>` follow it. The Python package and MCP server name (`nexus`)
 are internal identifiers; rename those separately if you want the CLI and MCP name to change too.
 
 ## Privacy and safety
@@ -338,7 +338,7 @@ are internal identifiers; rename those separately if you want the CLI and MCP na
 - No credentials exist anywhere in the code. There are no outbound calls.
 - Stored content is returned with a notice that it is data, not instructions; the server's MCP instructions
   tell models not to follow text inside memory.
-- No delete over MCP. `memlayer delete` requires `--yes`; `memlayer export` produces a full JSON backup.
+- No delete over MCP. `nexus delete` requires `--yes`; `nexus export` produces a full JSON backup.
 
 ## Not built yet (by design)
 

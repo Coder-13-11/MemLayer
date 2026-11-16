@@ -3,13 +3,13 @@
 import pytest
 from starlette.testclient import TestClient
 
-from memlayer.importer import import_text
-from memlayer.store import MemoryStore
-from memlayer.web import create_app
+from nexus.importer import import_text
+from nexus.store import MemoryStore
+from nexus.web import create_app
 
 from .conftest import PROJECT, SAMPLES
 
-W = {"X-MemLayer": "1"}
+W = {"X-Nexus": "1"}
 
 
 @pytest.fixture
@@ -25,14 +25,14 @@ def pid(store, imported):
 
 def test_rejects_foreign_host_and_unsigned_writes(client, pid):
     assert client.get("/api/projects", headers={"Host": "evil.example"}).status_code == 403
-    assert client.post("/api/projects", json={"name": "x"}).status_code == 403  # no X-MemLayer header
+    assert client.post("/api/projects", json={"name": "x"}).status_code == 403  # no X-Nexus header
     assert client.delete(f"/api/projects/{pid}").status_code == 403
     assert client.get("/api/projects").status_code == 200
 
 
 def test_index_uses_brand_and_static_is_not_cached(client):
     page = client.get("/")
-    assert page.status_code == 200 and "<title>MemLayer</title>" in page.text
+    assert page.status_code == 200 and "<title>NEXUS</title>" in page.text
     js = client.get("/static/js/main.js")
     assert js.status_code == 200 and js.headers["cache-control"] == "no-cache"
 
@@ -122,7 +122,7 @@ def test_external_write_changes_revision_and_activity(store, imported, db_path):
 
 
 def test_brand_is_configurable(monkeypatch, store, imported):
-    from memlayer import brand
+    from nexus import brand
     monkeypatch.setitem(brand.BRAND, "name", "Cortex")
     with TestClient(create_app(store.path, store=store), base_url="http://localhost:8765") as c:
         assert "<title>Cortex</title>" in c.get("/").text

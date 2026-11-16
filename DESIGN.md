@@ -1,6 +1,6 @@
 ---
 name: Project memory dashboard
-description: A calm, dense local workbench where every AI-written claim shows its status and origin before anything else. Product name is configurable (memlayer/brand.py) and is not part of this system.
+description: A calm, dense local workbench where every AI-written claim shows its status and origin before anything else. Product name is configurable (nexus/brand.py) and is not part of this system.
 colors:
   accent: "#5b5bd6"
   accent-hover: "#4c4cc4"

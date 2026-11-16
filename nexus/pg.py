@@ -124,7 +124,7 @@ class PgConnection:
                 self.shared.conn.execute("CREATE TABLE IF NOT EXISTS schema_version (version INTEGER NOT NULL)")
                 row = self.shared.conn.execute("SELECT max(version) FROM schema_version").fetchone()
                 if (row[0] or 0) < SCHEMA_VERSION:
-                    sql = resources.files("memlayer").joinpath(schema_sql).read_text(encoding="utf-8")
+                    sql = resources.files("nexus").joinpath(schema_sql).read_text(encoding="utf-8")
                     for stmt in _statements(sql):
                         self.shared.conn.execute(stmt)
                     self.shared.conn.execute("INSERT INTO schema_version VALUES (%s)", (SCHEMA_VERSION,))

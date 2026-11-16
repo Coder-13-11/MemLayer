@@ -25,7 +25,7 @@ PROJECT = "Environmental AI Research"
 
 def server_params() -> StdioServerParameters:
     return StdioServerParameters(
-        command=sys.executable, args=["-m", "memlayer.server", "--db", str(DB)],
+        command=sys.executable, args=["-m", "nexus.server", "--db", str(DB)],
         env={**os.environ, "PYTHONPATH": str(ROOT)},
     )
 
@@ -49,7 +49,7 @@ class Client:
         self._session = ClientSession(r, w)
         s = await self._session.__aenter__()
         await s.initialize()
-        print(f"\n--- [{self.label}] connected to a fresh memlayer server process ---")
+        print(f"\n--- [{self.label}] connected to a fresh nexus server process ---")
         return s
 
     async def __aexit__(self, *exc):
@@ -146,7 +146,7 @@ async def main() -> None:
         challenged = [g for g in gaps["gaps"] if g["type"] == "challenged_claim"]
         print(f"  still unresolved: {[g['summary'][:90] for g in challenged]}")
 
-    print(f"\nDone. Database: {DB}  (inspect with: python -m memlayer.cli --db {DB.name} context \"{PROJECT}\")")
+    print(f"\nDone. Database: {DB}  (inspect with: python -m nexus.cli --db {DB.name} context \"{PROJECT}\")")
 
 
 if __name__ == "__main__":
