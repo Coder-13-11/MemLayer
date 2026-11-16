@@ -31,6 +31,8 @@ from starlette.staticfiles import StaticFiles
 from . import __version__
 from . import models as m
 from .brand import BRAND
+from .briefing import DEFAULT_BUDGET, build_briefing
+from .check import check_statements
 from .context import build_project_context
 from .db import default_db_path
 from .gaps import analyze_gaps
@@ -100,13 +102,27 @@ def _gap_brief(g: dict[str, Any]) -> dict[str, Any]:
 
 def create_app(db_path: str | None = None, store: MemoryStore | None = None, poll_seconds: float = 1.0, *,
                store_for_request: Callable[[], MemoryStore] | None = None,
-               hosted: dict[str, Any] | None = None) -> Starlette:
-    """Local use: one database, localhost only, a live event stream.
+               hosted: dict[str, Any] | None = None, prefix: str = "/api",
+               authorize: Callable[[str], None] | None = None, actor: Callable[[], str] | None = None,
+               human: Callable[[], str | None] | None = None,
+               on_briefing: Callable[..., str | None] | None = None) -> Starlette:
+    """The memory API. Local use: one database, localhost only, a live event stream.
 
-    The hosted service passes ``store_for_request`` (the signed-in account's memory) and ``hosted`` (``mcp_url``
-    and an ``account()`` callable). It then wraps the app in its own sign-in middleware, serves the static files
-    itself, and the page polls /api/revision instead of holding a stream open (serverless hosts cut those off).
+    The hosted service mounts this twice, for signed-in browsers (``/api``) and for API keys (``/v1``), and
+    passes hooks that tie each request to its workspace and role:
+
+      ``store_for_request``  the current workspace's memory
+      ``authorize(action)``  raises unless the caller may ``write``, ``create_project``, ``create_record``,
+                             ``delete_record`` or ``delete_project``
+      ``actor()``            who to record in history
+      ``human()``            a signed-in person's name, or None for keys and apps (only people confirm records)
+      ``on_briefing(...)``   stores a context receipt and returns its id
+
+    Hosted pages poll /api/revision instead of holding a stream open (serverless hosts cut those off).
     """
+    authorize = authorize or (lambda action: None)
+    actor = actor or (lambda: ACTOR)
+    human = human or (lambda: "local user")
     if store_for_request is not None:
         class _Current:  # resolves to the signed-in account's memory on every call
             def __getattr__(self, name: str) -> Any:
@@ -138,13 +154,13 @@ def create_app(db_path: str | None = None, store: MemoryStore | None = None, pol
         mcp = {
             "server_name": BRAND["mcp_server_name"],
             "tools": ["get_project_context", "search_memory", "get_memory_details", "save_memory",
-                      "update_memory", "analyze_gaps", "import_source", "create_project", "list_projects",
-                      "get_review_instructions"],
+                      "update_memory", "analyze_gaps", "check_plan", "import_source", "create_project",
+                      "list_projects", "get_review_instructions"],
             "prompts": ["review_project"],
         }
         if hosted:
             mcp["url"] = hosted["mcp_url"]
-            where = {"account": hosted["account"](), "live": "poll"}
+            where = {"live": "poll", **hosted["context"]()}
         else:
             mcp["stdio_command"] = f"{sys.executable} -m nexus.server --db {store.path}"
             where = {"db_path": store.path, "live": "stream"}
@@ -158,6 +174,7 @@ def create_app(db_path: str | None = None, store: MemoryStore | None = None, pol
 
     async def projects(request: Request) -> JSONResponse:
         if request.method == "POST":
+            authorize("create_project")
             b = await _body(request)
             return _json(store.create_project(b.get("name", ""), b.get("description", ""), b.get("objective", "")), 201)
         return _json({"projects": [project_summary(p) for p in store.list_projects()]})
@@ -165,8 +182,10 @@ def create_app(db_path: str | None = None, store: MemoryStore | None = None, pol
     async def project(request: Request) -> JSONResponse:
         ref = request.path_params["pid"]
         if request.method == "DELETE":
+            authorize("delete_project")
             return _json(store.delete_project(ref))
         if request.method == "PATCH":
+            authorize("write")
             b = await _body(request)
             return _json(store.update_project(ref, description=b.get("description"), objective=b.get("objective")))
         snap = store.project_snapshot(ref)
@@ -191,12 +210,13 @@ def create_app(db_path: str | None = None, store: MemoryStore | None = None, pol
     async def records(request: Request) -> JSONResponse:
         ref = request.path_params["pid"]
         if request.method == "POST":
+            authorize("create_record")
             b = await _body(request)
             rec = store.save_record(
                 ref, kind=b.get("kind", "note"), title=b.get("title", ""), content=b.get("content", ""),
                 verification=b.get("verification", "unverified"), importance=b.get("importance", "normal"),
                 subject=b.get("subject") or None, value=b.get("value") or None, tags=b.get("tags") or [],
-                origin_model=b.get("origin_model") or "human", created_by=ACTOR,
+                origin_model=b.get("origin_model") or "human", created_by=actor(),
                 source_text=b.get("source_text") or None, evidence=b.get("evidence") or [],
                 relations=b.get("relations") or [],
             )
@@ -232,16 +252,25 @@ def create_app(db_path: str | None = None, store: MemoryStore | None = None, pol
     async def record(request: Request) -> JSONResponse:
         rid = request.path_params["rid"]
         if request.method == "DELETE":
+            authorize("delete_record")
             return _json(store.delete_record(rid))
         if request.method == "PATCH":
+            authorize("write")
             b = await _body(request)
             allowed = {"title", "content", "verification", "lifecycle", "importance", "subject", "value", "tags",
                        "superseded_by", "add_evidence", "add_relations"}
             kw = {k: v for k, v in b.items() if k in allowed}
-            return _json(store.update_record(rid, reason=b.get("reason", ""), changed_by=ACTOR, **kw))
+            if "confirm" in b:  # the trust tier: only a signed-in person can vouch for a record
+                person = human()
+                if person is None:
+                    raise m.ValidationError("Only a signed-in person can confirm a record; keys and apps cannot.")
+                kw["confirm"] = person if b["confirm"] else False
+            return _json(store.update_record(rid, reason=b.get("reason", "") or
+                                             ("Confirmed" if b.get("confirm") else ""), changed_by=actor(), **kw))
         return _json(store.get_record(rid, include_source_content=request.query_params.get("source") == "1"))
 
     async def relation(request: Request) -> JSONResponse:
+        authorize("write")
         return _json(store.delete_relation(request.path_params["relid"]))
 
     async def graph(request: Request) -> JSONResponse:
@@ -273,11 +302,45 @@ def create_app(db_path: str | None = None, store: MemoryStore | None = None, pol
         return _json(src)
 
     async def import_source(request: Request) -> JSONResponse:
+        authorize("create_record")
         b = await _body(request)
         return _json(import_text(
             store, b.get("text", ""), project=request.path_params["pid"], origin_model=b.get("origin_model") or None,
-            title=b.get("title") or None, created_by=ACTOR,
+            title=b.get("title") or None, created_by=actor(),
         ), 201)
+
+    async def check(request: Request) -> JSONResponse:
+        """Preflight: compare statements with what the project has settled. Reads only."""
+        b = await _body(request)
+        statements = b.get("statements") if "statements" in b else [b.get("statement")]
+        if not isinstance(statements, list):
+            raise m.ValidationError("statements must be a list")
+        return _json(check_statements(store.project_snapshot(request.path_params["pid"]), statements))
+
+    async def briefing(request: Request) -> JSONResponse:
+        """The text block a model is handed for this project, and the records that went into it."""
+        q = request.query_params
+        ref = request.path_params["pid"]
+        snap = store.project_snapshot(ref)
+        focus = None
+        if q.get("q"):
+            hits = store.search(q["q"], project=ref, include_inactive=True, include_sources=False, limit=30)
+            focus = [h["id"] for h in hits["results"]]
+        try:
+            budget = int(q.get("budget", DEFAULT_BUDGET))
+        except ValueError:
+            raise m.ValidationError("budget must be a number of tokens")
+        policy = q.get("policy", "all")
+        if policy not in ("all", "confirmed"):
+            raise m.ValidationError("policy must be all or confirmed")
+        out = build_briefing(snap, budget_tokens=budget, policy=policy, focus_ids=focus)
+        if on_briefing and q.get("receipt") != "0":
+            out["receipt_id"] = on_briefing(out, query=q.get("q"))
+        return _json(out)
+
+    async def export(request: Request) -> JSONResponse:
+        ref = request.path_params.get("pid")
+        return _json(store.export(ref), 200)
 
     async def activity(request: Request) -> JSONResponse:
         q = request.query_params
@@ -326,28 +389,51 @@ def create_app(db_path: str | None = None, store: MemoryStore | None = None, pol
     async def not_found(request: Request) -> Response:
         return _json({"error": "Not found"}, 404)
 
+    async def context(request: Request) -> JSONResponse:
+        ref = request.path_params["pid"]
+        matched = None
+        if request.query_params.get("q"):
+            hits = store.search(request.query_params["q"], project=ref, include_inactive=True,
+                                include_sources=False, limit=50)
+            matched = [h["id"] for h in hits["results"]]
+        return _json(build_project_context(store.project_snapshot(ref), matched_ids=matched))
+
+    P = prefix
     routes = [
-        Route("/app" if hosted else "/", index),
-        Route("/api/meta", meta),
-        Route("/api/projects", projects, methods=["GET", "POST"]),
-        Route("/api/projects/{pid}", project, methods=["GET", "PATCH", "DELETE"]),
-        Route("/api/projects/{pid}/records", records, methods=["GET", "POST"]),
-        Route("/api/projects/{pid}/graph", graph),
-        Route("/api/projects/{pid}/gaps", gaps),
-        Route("/api/projects/{pid}/sources", sources),
-        Route("/api/projects/{pid}/import", import_source, methods=["POST"]),
-        Route("/api/records/{rid}", record, methods=["GET", "PATCH", "DELETE"]),
-        Route("/api/relations/{relid}", relation, methods=["DELETE"]),
-        Route("/api/sources/{sid}", source),
-        Route("/api/activity", activity),
-        Route("/api/search", search),
-        Route("/api/revision", revision),
-        *([] if hosted else [Route("/api/events", events)]),
-        Route("/api/{rest:path}", not_found),
+        *([] if hosted else [Route("/", index)]),
+        Route(f"{P}/meta", meta),
+        Route(f"{P}/projects", projects, methods=["GET", "POST"]),
+        Route(f"{P}/projects/{{pid}}", project, methods=["GET", "PATCH", "DELETE"]),
+        Route(f"{P}/projects/{{pid}}/records", records, methods=["GET", "POST"]),
+        Route(f"{P}/projects/{{pid}}/graph", graph),
+        Route(f"{P}/projects/{{pid}}/gaps", gaps),
+        Route(f"{P}/projects/{{pid}}/sources", sources),
+        Route(f"{P}/projects/{{pid}}/context", context),
+        Route(f"{P}/projects/{{pid}}/briefing", briefing),
+        Route(f"{P}/projects/{{pid}}/check", check, methods=["POST"]),
+        Route(f"{P}/projects/{{pid}}/export", export),
+        Route(f"{P}/projects/{{pid}}/import", import_source, methods=["POST"]),
+        Route(f"{P}/records/{{rid}}", record, methods=["GET", "PATCH", "DELETE"]),
+        Route(f"{P}/relations/{{relid}}", relation, methods=["DELETE"]),
+        Route(f"{P}/sources/{{sid}}", source),
+        Route(f"{P}/activity", activity),
+        Route(f"{P}/search", search),
+        Route(f"{P}/revision", revision),
+        *([] if hosted else [Route(f"{P}/events", events)]),
+        Route(f"{P}/{{rest:path}}", not_found, methods=["GET", "POST", "PATCH", "PUT", "DELETE"]),
         *([] if hosted else [Mount("/static", app=StaticFiles(directory=str(static_dir)), name="static")]),
     ]
+    from .tenancy import LimitReached, PermissionDenied
+
+    async def _forbidden(request: Request, exc: Exception) -> JSONResponse:
+        return _json({"error": str(exc)}, 403)
+
+    async def _limit(request: Request, exc: Exception) -> JSONResponse:
+        return _json({"error": str(exc), "code": "limit_reached"}, 402)
+
     app = Starlette(routes=routes, middleware=[] if hosted else [Middleware(LocalOnly)],
-                    exception_handlers={m.NotFound: _not_found, m.ValidationError: _invalid})
+                    exception_handlers={m.NotFound: _not_found, LimitReached: _limit, m.ValidationError: _invalid,
+                                        PermissionDenied: _forbidden})
     if not hosted:
         app.state.store = store
     return app

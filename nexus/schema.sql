@@ -54,7 +54,10 @@ CREATE TABLE IF NOT EXISTS records (
     source_excerpt  TEXT,            -- the exact span of the source this record came from
     version         INTEGER NOT NULL DEFAULT 1,
     created_at      TEXT NOT NULL,
-    updated_at      TEXT NOT NULL
+    updated_at      TEXT NOT NULL,
+    -- A signed-in person vouched for this record as written. Cleared when anyone else changes its wording.
+    confirmed_by    TEXT,
+    confirmed_at    TEXT
 );
 CREATE INDEX IF NOT EXISTS records_project ON records(project_id, lifecycle);
 CREATE INDEX IF NOT EXISTS records_subject ON records(project_id, subject);

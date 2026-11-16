@@ -17,7 +17,8 @@ from functools import lru_cache
 from importlib import resources
 from typing import Any, Iterable, Iterator
 
-SCHEMA_VERSION = 1
+from .db import SCHEMA_VERSION, UPGRADES
+
 HIDDEN = {"fts", "seq"}  # backend columns that never leave the store
 _SCHEMA_NAME = re.compile(r"^[a-z_][a-z0-9_]{0,62}$")
 
@@ -123,10 +124,16 @@ class PgConnection:
                 self.shared.conn.execute(f'SET LOCAL search_path TO "{self.schema}"')
                 self.shared.conn.execute("CREATE TABLE IF NOT EXISTS schema_version (version INTEGER NOT NULL)")
                 row = self.shared.conn.execute("SELECT max(version) FROM schema_version").fetchone()
-                if (row[0] or 0) < SCHEMA_VERSION:
+                current = row[0] or 0
+                if current == 0:  # a new schema gets the current tables in one step
                     sql = resources.files("nexus").joinpath(schema_sql).read_text(encoding="utf-8")
                     for stmt in _statements(sql):
                         self.shared.conn.execute(stmt)
+                else:
+                    for version in range(current + 1, SCHEMA_VERSION + 1):
+                        for stmt in UPGRADES[version]:
+                            self.shared.conn.execute(stmt)
+                if current < SCHEMA_VERSION:
                     self.shared.conn.execute("INSERT INTO schema_version VALUES (%s)", (SCHEMA_VERSION,))
                 self.commit()
             except BaseException:

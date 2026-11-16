@@ -1,5 +1,6 @@
--- Accounts for the hosted service, Postgres edition (see accounts.py for the SQLite schema and the meaning of
--- each table). Emails are stored lowercased by the code, so plain UNIQUE gives case-insensitive uniqueness.
+-- Control plane v1: users, OAuth clients, grants, tokens, sessions (the tables the hosted service started with).
+-- Written in the SQL subset SQLite and Postgres share. IF NOT EXISTS makes this a no-op on databases created
+-- before migrations were numbered. Emails are stored lowercased by the code, so plain UNIQUE is case-insensitive.
 
 CREATE TABLE IF NOT EXISTS users (
     id TEXT PRIMARY KEY,
@@ -14,6 +15,7 @@ CREATE TABLE IF NOT EXISTS oauth_clients (
     info TEXT NOT NULL,
     created_at TEXT NOT NULL
 );
+-- An authorization request waiting for the user to sign in and approve it.
 CREATE TABLE IF NOT EXISTS auth_requests (
     id TEXT PRIMARY KEY,
     client_id TEXT NOT NULL,
@@ -26,6 +28,7 @@ CREATE TABLE IF NOT EXISTS auth_codes (
     data TEXT NOT NULL,
     expires_at DOUBLE PRECISION NOT NULL
 );
+-- One grant per approval of an app; every token issued under it shares its id, so revoking is one update.
 CREATE TABLE IF NOT EXISTS grants (
     id TEXT PRIMARY KEY,
     user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -50,7 +53,7 @@ CREATE TABLE IF NOT EXISTS beta_requests (
     topic TEXT NOT NULL DEFAULT '',
     created_at TEXT NOT NULL
 );
--- Dashboard sign-in sessions (hashed session ids).
+-- Browser sign-in sessions (only the hash of the session id is stored).
 CREATE TABLE IF NOT EXISTS web_sessions (
     id_hash TEXT PRIMARY KEY,
     user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,

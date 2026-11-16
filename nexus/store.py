@@ -426,8 +426,13 @@ class MemoryStore:
         superseded_by: str | None = None,
         add_evidence: Iterable[Mapping[str, Any]] = (),
         add_relations: Iterable[Mapping[str, Any]] = (),
+        confirm: str | bool | None = None,
     ) -> dict[str, Any]:
-        """Correct, re-status or supersede a record. The old version goes to record_history."""
+        """Correct, re-status or supersede a record. The old version goes to record_history.
+
+        ``confirm`` is the trust tier: a person's name confirms the record as it stands after this change,
+        ``False`` withdraws a confirmation. Left as ``None``, a change to the wording (title, content, subject
+        or value) clears any earlier confirmation, because what was vouched for no longer exists."""
         reason = m.require_text(reason, "reason", 2000)
         add_evidence, add_relations = list(add_evidence), list(add_relations)
         changes: dict[str, Any] = {}
@@ -449,11 +454,16 @@ class MemoryStore:
             changes["value"] = m.optional_text(value, "value", 500)
         if tags is not None:
             changes["tags"] = json.dumps([m.require_text(t, "tag", 60) for t in tags])
-        if not (changes or superseded_by or add_evidence or add_relations):
+        if not (changes or superseded_by or add_evidence or add_relations or confirm is not None):
             raise ValidationError("update_memory was called without any change")
 
         with self._write() as c:
             row = self._record(c, record_id)
+            reworded = any(k in changes and changes[k] != row[k] for k in ("title", "content", "subject", "value"))
+            if isinstance(confirm, str) and confirm:
+                changes["confirmed_by"], changes["confirmed_at"] = m.require_text(confirm, "confirmed_by", 200), now()
+            elif confirm is False or (reworded and row["confirmed_by"]):
+                changes["confirmed_by"], changes["confirmed_at"] = None, None
             if superseded_by:
                 m.require_id(superseded_by, "superseded_by")
             if changes:
@@ -482,7 +492,8 @@ class MemoryStore:
             self._touch_project(c, row["project_id"])
 
         out = self.get_record(record_id)
-        out["changed_fields"] = sorted(set(changes) - {"superseded_by"}) + (["lifecycle"] if superseded_by else [])
+        out["changed_fields"] = (sorted(set(changes) - {"superseded_by", "confirmed_at"})
+                                 + (["lifecycle"] if superseded_by else []))
         return out
 
     def delete_record(self, record_id: str) -> dict[str, Any]:

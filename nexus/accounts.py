@@ -1,9 +1,10 @@
-"""Accounts for the hosted service: users, OAuth clients, grants and tokens.
+"""The control plane: users, sessions, OAuth clients and grants, plus (through mixins) workspaces, API keys,
+provider credentials, metering and audit.
 
-This lives in its own SQLite file (accounts.db), separate from memory. Each
-user's memory is a separate SQLite file under ``users/<user_id>/memory.db``, so
-one user's data can never appear in another user's query, and exporting or
-deleting an account is a single file.
+This lives in its own database (accounts.db, or a Postgres schema), separate from memory. Each workspace's
+memory is a separate SQLite file under ``workspaces/<id>/memory.db``, or a separate Postgres schema, so one
+workspace's records can never appear in another workspace's query, and exporting or deleting a workspace is
+one file or one schema. The tables are created and upgraded by numbered migrations (``migrate.py``).
 
 Secrets are never stored in the clear: passwords are scrypt hashes, and
 authorization codes, access tokens and refresh tokens are stored as SHA-256
@@ -26,72 +27,19 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Iterator
 
+from collections import OrderedDict
+
+from . import migrate
+from .crypto import KeyRing
+from .keys import KeysMixin
+from .metering import MeteringMixin
 from .models import NotFound, ValidationError
 from .pg import PgConnection, is_pg_url
 from .store import MemoryStore, new_id, now
+from .tenancy import TenancyMixin, role_at_least
 
-SCHEMA = """
-CREATE TABLE IF NOT EXISTS users (
-    id TEXT PRIMARY KEY,
-    email TEXT NOT NULL UNIQUE COLLATE NOCASE,
-    password_hash TEXT NOT NULL,
-    created_at TEXT NOT NULL,
-    last_login_at TEXT,
-    disabled INTEGER NOT NULL DEFAULT 0
-);
-CREATE TABLE IF NOT EXISTS oauth_clients (
-    client_id TEXT PRIMARY KEY,
-    info TEXT NOT NULL,
-    created_at TEXT NOT NULL
-);
--- An authorization request waiting for the user to sign in and approve it.
-CREATE TABLE IF NOT EXISTS auth_requests (
-    id TEXT PRIMARY KEY,
-    client_id TEXT NOT NULL,
-    params TEXT NOT NULL,
-    expires_at REAL NOT NULL
-);
-CREATE TABLE IF NOT EXISTS auth_codes (
-    code_hash TEXT PRIMARY KEY,
-    grant_id TEXT NOT NULL,
-    data TEXT NOT NULL,
-    expires_at REAL NOT NULL
-);
--- One grant per approval of an app; every token issued under it shares its id, so revoking is one update.
-CREATE TABLE IF NOT EXISTS grants (
-    id TEXT PRIMARY KEY,
-    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    client_id TEXT NOT NULL,
-    client_name TEXT,
-    scopes TEXT NOT NULL,
-    resource TEXT,
-    created_at TEXT NOT NULL,
-    last_used_at TEXT,
-    revoked_at TEXT
-);
-CREATE INDEX IF NOT EXISTS grants_user ON grants(user_id);
-CREATE TABLE IF NOT EXISTS tokens (
-    token_hash TEXT PRIMARY KEY,
-    kind TEXT NOT NULL CHECK (kind IN ('access', 'refresh')),
-    grant_id TEXT NOT NULL REFERENCES grants(id) ON DELETE CASCADE,
-    expires_at INTEGER NOT NULL
-);
-CREATE INDEX IF NOT EXISTS tokens_grant ON tokens(grant_id);
--- Private-beta invite requests from the public site.
-CREATE TABLE IF NOT EXISTS beta_requests (
-    email TEXT PRIMARY KEY COLLATE NOCASE,
-    topic TEXT NOT NULL DEFAULT '',
-    created_at TEXT NOT NULL
-);
--- Dashboard sign-in sessions (hashed session ids).
-CREATE TABLE IF NOT EXISTS web_sessions (
-    id_hash TEXT PRIMARY KEY,
-    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    created_at TEXT NOT NULL,
-    expires_at INTEGER NOT NULL
-);
-"""
-ACCOUNTS_SCHEMA = "nexus_accounts"  # Postgres schema holding the tables above
+CONTROL_SCHEMA = os.environ.get("NEXUS_CONTROL_SCHEMA", "nexus_control")  # Postgres schema for these tables
+MAX_OPEN_STORES = 256
 
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 MIN_PASSWORD = 10
@@ -126,27 +74,33 @@ def check_password(password: str, stored: str) -> bool:
 _DUMMY_HASH = hash_password(secrets.token_hex(8))
 
 
-class AccountStore:
-    def __init__(self, location: str | os.PathLike):
-        """``location`` is a folder (accounts.db plus one memory file per user) or a postgres:// URL (accounts
-        in the nexus_accounts schema plus one schema per user)."""
+class AccountStore(TenancyMixin, KeysMixin, MeteringMixin):
+    def __init__(self, location: str | os.PathLike, *, keyring: KeyRing | None = None,
+                 allow_insecure_upstreams: bool = False):
+        """``location`` is a folder (accounts.db plus one memory file per workspace) or a postgres:// URL (the
+        control tables in one schema plus one schema per workspace)."""
         self.location = str(location)
-        self._stores: dict[str, MemoryStore] = {}
+        self._stores: OrderedDict[str, MemoryStore] = OrderedDict()
+        self.allow_insecure_upstreams = allow_insecure_upstreams
         if is_pg_url(self.location):
             self.dialect = "pg"
-            self.conn = PgConnection(self.location, ACCOUNTS_SCHEMA, schema_sql="accounts_pg.sql")
+            self.data_dir = None
+            self.conn = PgConnection(self.location, CONTROL_SCHEMA, schema_sql=None)
             self._lock = self.conn.lock
-            return
-        self.dialect = "sqlite"
-        self.data_dir = Path(location).expanduser()
-        self.data_dir.mkdir(parents=True, exist_ok=True)
-        self.conn = sqlite3.connect(self.data_dir / "accounts.db", isolation_level=None, check_same_thread=False)
-        self.conn.row_factory = sqlite3.Row
-        self.conn.execute("PRAGMA foreign_keys = ON")
-        self.conn.execute("PRAGMA busy_timeout = 5000")
-        self.conn.execute("PRAGMA journal_mode = WAL")
-        self.conn.executescript(SCHEMA)
-        self._lock = threading.RLock()
+            with self._lock:
+                self.conn.execute(f'CREATE SCHEMA IF NOT EXISTS "{CONTROL_SCHEMA}"')
+        else:
+            self.dialect = "sqlite"
+            self.data_dir = Path(location).expanduser()
+            self.data_dir.mkdir(parents=True, exist_ok=True)
+            self.conn = sqlite3.connect(self.data_dir / "accounts.db", isolation_level=None, check_same_thread=False)
+            self.conn.row_factory = sqlite3.Row
+            self.conn.execute("PRAGMA foreign_keys = ON")
+            self.conn.execute("PRAGMA busy_timeout = 5000")
+            self.conn.execute("PRAGMA journal_mode = WAL")
+            self._lock = threading.RLock()
+        self.migrations_applied = migrate.apply(self)
+        self.keyring = keyring or KeyRing.from_environment(self.data_dir)
 
     def close(self) -> None:
         for s in self._stores.values():
@@ -179,17 +133,17 @@ class AccountStore:
 
     # ------------------------------------------------------------------ users
 
-    def create_user(self, email: str, password: str) -> dict[str, Any]:
+    def create_user(self, email: str, password: str, name: str = "") -> dict[str, Any]:
         email = (email or "").strip().lower()
         if not EMAIL_RE.match(email) or len(email) > 254:
             raise ValidationError("Enter a valid email address.")
-        if len(password or "") < MIN_PASSWORD:
-            raise ValidationError(f"Use a password of at least {MIN_PASSWORD} characters.")
-        user = {"id": new_id("usr"), "email": email, "created_at": now()}
+        check_new_password(password)
+        name = (name or "").strip()[:80]
+        user = {"id": new_id("usr"), "email": email, "name": name, "created_at": now()}
         try:
             with self._tx() as c:
-                c.execute("INSERT INTO users (id, email, password_hash, created_at) VALUES (?, ?, ?, ?)",
-                          (user["id"], email, hash_password(password), user["created_at"]))
+                c.execute("INSERT INTO users (id, email, name, password_hash, created_at) VALUES (?, ?, ?, ?, ?)",
+                          (user["id"], email, name, hash_password(password), user["created_at"]))
         except Exception as e:  # sqlite3.IntegrityError or psycopg's UniqueViolation
             if "UNIQUE" in str(e).upper() or "unique" in type(e).__name__.lower() or "duplicate" in str(e):
                 raise ValidationError("An account with this email already exists. Sign in instead.") from None
@@ -203,28 +157,83 @@ class AccountStore:
             return None
         with self._tx() as c:
             c.execute("UPDATE users SET last_login_at = ? WHERE id = ?", (now(), row["id"]))
-        return {"id": row["id"], "email": row["email"]}
+        return {"id": row["id"], "email": row["email"], "name": row["name"]}
 
     def get_user(self, user_id: str) -> dict[str, Any]:
-        row = self._one("SELECT id, email, created_at, last_login_at, disabled FROM users WHERE id = ?", user_id)
+        row = self._one("SELECT id, email, name, created_at, last_login_at, disabled, email_verified_at "
+                        "FROM users WHERE id = ?", user_id)
         if not row:
             raise NotFound(f"user {user_id} not found")
         return dict(row)
 
-    def memory_path(self, user_id: str) -> Path:
-        if not re.fullmatch(r"usr_[0-9a-f]{12}", user_id):
-            raise ValidationError("bad user id")
-        return self.data_dir / "users" / user_id / "memory.db"
+    def find_user(self, email: str) -> dict[str, Any] | None:
+        row = self._one("SELECT id, email, name FROM users WHERE email = ? AND disabled = 0",
+                        (email or "").strip().lower())
+        return dict(row) if row else None
 
-    def memory_for(self, user_id: str) -> MemoryStore:
-        """The user's own memory (a file, or a Postgres schema), opened once and reused."""
-        if not re.fullmatch(r"usr_[0-9a-f]{12}", user_id):
-            raise ValidationError("bad user id")
+    def update_profile(self, user_id: str, name: str) -> dict[str, Any]:
+        with self._tx() as c:
+            c.execute("UPDATE users SET name = ? WHERE id = ?", ((name or "").strip()[:80], user_id))
+        return self.get_user(user_id)
+
+    def set_password(self, user_id: str, password: str, *, keep_session: str | None = None) -> None:
+        """Change a password and sign the account out everywhere else: other browsers and every connected app."""
+        check_new_password(password)
+        with self._tx() as c:
+            c.execute("UPDATE users SET password_hash = ? WHERE id = ?", (hash_password(password), user_id))
+            c.execute("DELETE FROM web_sessions WHERE user_id = ? AND id_hash <> ?",
+                      (user_id, digest(keep_session) if keep_session else ""))
+            c.execute("DELETE FROM tokens WHERE grant_id IN (SELECT id FROM grants WHERE user_id = ?)", (user_id,))
+
+    def verify_password(self, user_id: str, password: str) -> bool:
+        row = self._one("SELECT password_hash FROM users WHERE id = ?", user_id)
+        return bool(row) and check_password(password or "", row["password_hash"])
+
+    def mark_verified(self, user_id: str) -> None:
+        with self._tx() as c:
+            c.execute("UPDATE users SET email_verified_at = coalesce(email_verified_at, ?) WHERE id = ?",
+                      (now(), user_id))
+
+    def delete_user(self, user_id: str) -> dict[str, Any]:
+        """Delete an account. Workspaces where they are the only member go with it; a workspace they solely own
+        but share with others must be handed over or deleted first."""
+        mine = self.workspaces_for(user_id)
+        for ws in mine:
+            if ws["role"] == "owner" and ws["member_count"] > 1:
+                owners = self._one("SELECT count(*) FROM memberships WHERE workspace_id = ? AND role = 'owner'", ws["id"])
+                if owners[0] == 1:
+                    raise ValidationError(f"You are the only owner of \u201c{ws['name']}\u201d, which has other members. "
+                                          "Make someone else an owner, or delete the workspace, first.")
+        removed = [self.delete_workspace(ws["id"])["name"] for ws in mine if ws["member_count"] == 1]
+        with self._tx() as c:
+            c.execute("DELETE FROM tokens WHERE grant_id IN (SELECT id FROM grants WHERE user_id = ?)", (user_id,))
+            c.execute("DELETE FROM users WHERE id = ?", (user_id,))
+        return {"deleted": user_id, "workspaces_deleted": removed}
+
+    # --------------------------------------------------------- memory stores
+
+    def memory_for(self, workspace_id: str) -> MemoryStore:
+        """The workspace's own memory (a file, or a Postgres schema). Opened on first use and kept open; the
+        least recently used SQLite files are closed once many are open."""
+        if not re.fullmatch(r"wsp_[0-9a-f]{12}", workspace_id or ""):
+            raise ValidationError("bad workspace id")
         with self._lock:
-            store = self._stores.get(user_id)
-            if store is None:
-                target = self.location if self.dialect == "pg" else self.memory_path(user_id)
-                store = self._stores[user_id] = MemoryStore(target, schema=f"u_{user_id[4:]}")
+            store = self._stores.get(workspace_id)
+            if store is not None:
+                self._stores.move_to_end(workspace_id)
+                return store
+            ref = self.get_workspace(workspace_id)["store_ref"]
+            if self.dialect == "pg":
+                store = MemoryStore(self.location, schema=ref)
+            else:
+                target = (self.data_dir / ref).resolve()
+                if self.data_dir.resolve() not in target.parents:
+                    raise ValidationError("bad store location")
+                store = MemoryStore(target)
+            self._stores[workspace_id] = store
+            while self.dialect != "pg" and len(self._stores) > MAX_OPEN_STORES:
+                _, oldest = self._stores.popitem(last=False)
+                oldest.close()
             return store
 
     # ------------------------------------------------------- dashboard sessions
@@ -241,9 +250,9 @@ class AccountStore:
     def session_user(self, sid: str | None) -> dict[str, Any] | None:
         if not sid:
             return None
-        row = self._one("SELECT u.id, u.email FROM web_sessions s JOIN users u ON u.id = s.user_id "
+        row = self._one("SELECT u.id, u.email, u.name FROM web_sessions s JOIN users u ON u.id = s.user_id "
                         "WHERE s.id_hash = ? AND s.expires_at > ? AND u.disabled = 0", digest(sid), int(time.time()))
-        return {"id": row["id"], "email": row["email"]} if row else None
+        return {"id": row["id"], "email": row["email"], "name": row["name"]} if row else None
 
     def end_session(self, sid: str | None) -> None:
         if sid:
@@ -305,14 +314,24 @@ class AccountStore:
 
     # ---------------------------------------------------- codes, grants, tokens
 
-    def issue_code(self, user_id: str, client_id: str, client_name: str | None, params: dict[str, Any]) -> str:
+    def issue_code(self, user_id: str, client_id: str, client_name: str | None, params: dict[str, Any], *,
+                   workspace_id: str, access: str = "write") -> str:
+        """Record the user's approval of an app for one workspace and return the one-time authorization code."""
+        if access not in ("read", "write"):
+            raise ValidationError("access must be read or write")
+        role = self.role_in(workspace_id, user_id)
+        if role is None:
+            raise ValidationError("You are not a member of that workspace.")
+        if not role_at_least(role, "editor"):
+            access = "read"
         code = secrets.token_urlsafe(32)
         grant_id = new_id("grt")
         with self._tx() as c:
             c.execute("DELETE FROM auth_codes WHERE expires_at < ?", (time.time(),))
-            c.execute("INSERT INTO grants (id, user_id, client_id, client_name, scopes, resource, created_at) "
-                      "VALUES (?, ?, ?, ?, ?, ?, ?)",
-                      (grant_id, user_id, client_id, client_name, json.dumps(params["scopes"]), params.get("resource"), now()))
+            c.execute("INSERT INTO grants (id, user_id, client_id, client_name, scopes, resource, created_at, "
+                      "workspace_id, access) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                      (grant_id, user_id, client_id, client_name, json.dumps(params["scopes"]), params.get("resource"),
+                       now(), workspace_id, access))
             c.execute("INSERT INTO auth_codes (code_hash, grant_id, data, expires_at) VALUES (?, ?, ?, ?)",
                       (digest(code), grant_id, json.dumps({**params, "client_id": client_id, "user_id": user_id}),
                        time.time() + CODE_TTL))
@@ -353,16 +372,29 @@ class AccountStore:
             return row["grant_id"]
 
     def lookup_token(self, token: str, kind: str) -> dict[str, Any] | None:
-        """A live token with its grant and user, or None if expired, revoked or the user is disabled."""
-        row = self._one(
-            "SELECT t.kind, t.expires_at, g.id AS grant_id, g.user_id, g.client_id, g.scopes, g.resource, "
-            "g.last_used_at FROM tokens t JOIN grants g ON g.id = t.grant_id JOIN users u ON u.id = g.user_id "
-            "WHERE t.token_hash = ? AND t.kind = ? AND g.revoked_at IS NULL AND u.disabled = 0 AND t.expires_at > ?",
-            digest(token or ""), kind, int(time.time()))
-        if not row:
+        """A live token with its grant, user and workspace, or None if it expired, was revoked, the user is
+        disabled, or the user is no longer a member of the workspace. The role is read on every call, so a
+        change of role or a removal takes effect on the app's next request."""
+        sql = ("SELECT t.kind, t.expires_at, g.id AS grant_id, g.user_id, g.client_id, g.client_name, g.scopes, "
+               "g.resource, g.last_used_at, g.workspace_id, g.access, u.email, m.role "
+               "FROM tokens t JOIN grants g ON g.id = t.grant_id JOIN users u ON u.id = g.user_id "
+               "LEFT JOIN memberships m ON m.workspace_id = g.workspace_id AND m.user_id = g.user_id "
+               "WHERE t.token_hash = ? AND t.kind = ? AND g.revoked_at IS NULL AND u.disabled = 0 AND t.expires_at > ?")
+        args = (digest(token or ""), kind, int(time.time()))
+        row = self._one(sql, *args)
+        if row and row["workspace_id"] is None:
+            # An approval from before workspaces existed: it was for the user's own memory, which is now
+            # their personal workspace.
+            ws = self.ensure_personal_workspace({"id": row["user_id"], "email": row["email"]})
+            with self._tx() as c:
+                c.execute("UPDATE grants SET workspace_id = ? WHERE user_id = ? AND workspace_id IS NULL",
+                          (ws["id"], row["user_id"]))
+            row = self._one(sql, *args)
+        if not row or row["role"] is None:
             return None
         d = dict(row)
         d["scopes"] = json.loads(d["scopes"])
+        d["can_write"] = d["access"] == "write" and role_at_least(d["role"], "editor")
         return d
 
     def touch_grant(self, grant_id: str, last_used_at: str | None) -> None:
@@ -383,11 +415,42 @@ class AccountStore:
         return changed
 
     def grants_for(self, user_id: str) -> list[dict[str, Any]]:
+        """Apps this person connected, across their workspaces."""
         with self._lock:
             rows = self.conn.execute(
-                "SELECT id, client_id, client_name, created_at, last_used_at FROM grants "
-                "WHERE user_id = ? AND revoked_at IS NULL ORDER BY created_at DESC", (user_id,)).fetchall()
+                "SELECT g.id, g.client_id, g.client_name, g.created_at, g.last_used_at, g.access, g.workspace_id, "
+                "w.name AS workspace FROM grants g LEFT JOIN workspaces w ON w.id = g.workspace_id "
+                "WHERE g.user_id = ? AND g.revoked_at IS NULL ORDER BY g.created_at DESC", (user_id,)).fetchall()
         return [dict(r) for r in rows]
+
+    def workspace_grants(self, workspace_id: str) -> list[dict[str, Any]]:
+        """Every app connected to a workspace, with who connected it. For workspace admins."""
+        with self._lock:
+            rows = self.conn.execute(
+                "SELECT g.id, g.client_id, g.client_name, g.created_at, g.last_used_at, g.access, g.user_id, u.email "
+                "FROM grants g JOIN users u ON u.id = g.user_id WHERE g.workspace_id = ? AND g.revoked_at IS NULL "
+                "ORDER BY g.created_at DESC", (workspace_id,)).fetchall()
+        return [dict(r) for r in rows]
+
+    def revoke_workspace_grant(self, workspace_id: str, grant_id: str, user_id: str | None = None) -> bool:
+        """Disconnect an app from a workspace. With ``user_id``, only that person's own connection."""
+        with self._tx() as c:
+            sql, args = ("UPDATE grants SET revoked_at = ? WHERE id = ? AND workspace_id = ? AND revoked_at IS NULL",
+                         [now(), grant_id, workspace_id])
+            if user_id:
+                sql += " AND user_id = ?"
+                args.append(user_id)
+            changed = c.execute(sql, args).rowcount == 1
+            if changed:
+                c.execute("DELETE FROM tokens WHERE grant_id = ?", (grant_id,))
+        return changed
+
+
+def check_new_password(password: str) -> None:
+    if len(password or "") < MIN_PASSWORD:
+        raise ValidationError(f"Use a password of at least {MIN_PASSWORD} characters.")
+    if len(password) > 1024:
+        raise ValidationError("That password is too long.")
 
 
 def _epoch(iso: str) -> float:

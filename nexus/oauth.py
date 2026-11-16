@@ -105,7 +105,10 @@ class NexusOAuthProvider:
             return None
         self.accounts.touch_grant(t["grant_id"], t["last_used_at"])
         return AccessToken(token=token, client_id=t["client_id"], scopes=t["scopes"], expires_at=t["expires_at"],
-                           resource=t["resource"], subject=t["user_id"], claims={"grant_id": t["grant_id"]})
+                           resource=t["resource"], subject=t["user_id"],
+                           claims={"grant_id": t["grant_id"], "workspace_id": t["workspace_id"], "role": t["role"],
+                                   "access": t["access"], "can_write": t["can_write"], "email": t["email"],
+                                   "client_name": t["client_name"] or "an app"})
 
     async def revoke_token(self, token: AccessToken | RefreshToken) -> None:
         t = self.accounts.lookup_token(token.token, "access") or self.accounts.lookup_token(token.token, "refresh")

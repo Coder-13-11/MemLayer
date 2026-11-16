@@ -57,6 +57,9 @@ CREATE TABLE IF NOT EXISTS records (
     version         INTEGER NOT NULL DEFAULT 1,
     created_at      TEXT NOT NULL,
     updated_at      TEXT NOT NULL,
+    -- A signed-in person vouched for this record as written. Cleared when anyone else changes its wording.
+    confirmed_by    TEXT,
+    confirmed_at    TEXT,
     fts             tsvector GENERATED ALWAYS AS (
                         setweight(to_tsvector('english', title), 'A')
                         || setweight(to_tsvector('english', content), 'B')

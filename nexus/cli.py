@@ -12,7 +12,14 @@
     nexus export backup.json
     nexus serve
     nexus web --port 8765
-    nexus hosted --public-url https://memory.example.com --data-dir /data
+    nexus hosted --public-url https://nexus.example.com --data-dir /data
+
+Against a NEXUS server (set NEXUS_URL and NEXUS_API_KEY), or the local database without them:
+    nexus brief "Checkout rebuild"            print what a model is handed; run at the start of an agent session
+    nexus check "Checkout rebuild" "Use Jest" exit 2 if a step conflicts with or repeats a replaced decision
+
+Operating a server:
+    nexus admin migrate | status | workspaces | outbox | set-plan | rotate-keys | generate-key | reset-link
 """
 
 from __future__ import annotations
@@ -126,10 +133,13 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("out", type=Path)
     p.add_argument("--project")
 
+    from .remote import add_parsers
+    add_parsers(sub, str(default_db_path()))
     sub.add_parser("serve", help="run the MCP server on stdio")
     p = sub.add_parser("web", help="run the local web dashboard")
     p.add_argument("--port", type=int, default=8765)
-    sub.add_parser("hosted", help="run the hosted service (MCP over HTTPS with sign-in); see nexus hosted -h")
+    sub.add_parser("hosted", help="run the hosted service (site, app, API, gateway and MCP); see nexus hosted -h")
+    sub.add_parser("admin", help="operator commands for a hosted service; see nexus admin -h")
     return ap
 
 
@@ -139,7 +149,14 @@ def main(argv: list[str] | None = None) -> int:
         from .hosted import main as hosted
         hosted(argv[1:])
         return 0
+    if argv[:1] == ["admin"]:
+        from .remote import admin
+        return admin(argv[1:])
     args = build_parser().parse_args(argv)
+    if args.cmd in ("brief", "check"):
+        from . import remote
+        getattr(remote, args.cmd)(args)
+        return 0
     if args.cmd == "serve":
         from .server import main as serve
         serve(["--db", args.db])

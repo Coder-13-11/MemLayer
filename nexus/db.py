@@ -7,7 +7,12 @@ import sqlite3
 from importlib import resources
 from pathlib import Path
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
+
+# Changes applied to a store created at an earlier version, keyed by the version they bring it to.
+UPGRADES = {
+    2: ["ALTER TABLE records ADD COLUMN confirmed_by TEXT", "ALTER TABLE records ADD COLUMN confirmed_at TEXT"],
+}
 
 
 def default_db_path() -> Path:
@@ -39,6 +44,12 @@ def _migrate(conn: sqlite3.Connection) -> None:
     current = conn.execute("PRAGMA user_version").fetchone()[0]
     if current >= SCHEMA_VERSION:
         return
-    schema = resources.files("nexus").joinpath("schema.sql").read_text(encoding="utf-8")
-    conn.executescript(schema)
+    if current == 0:  # a new file gets the current schema in one step
+        conn.executescript(resources.files("nexus").joinpath("schema.sql").read_text(encoding="utf-8"))
+    else:
+        conn.execute("BEGIN IMMEDIATE")
+        for version in range(current + 1, SCHEMA_VERSION + 1):
+            for statement in UPGRADES[version]:
+                conn.execute(statement)
+        conn.execute("COMMIT")
     conn.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
