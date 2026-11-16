@@ -61,6 +61,7 @@ function draw(panel, rec, ctx) {
       h("h2", { class: "title" }, rec.title),
       h("div", { class: "chip-row" }, statusPill(rec.status), modelChip(rec.origin_model),
         h("span", { class: "pill" }, `${rec.importance_label} importance`)),
+      confirmRow(rec, ctx, reload),
       superseded && rec.superseded_by ? h("p", { class: "warn-note", style: { marginTop: "14px" } },
         "This record was replaced. ", recLink({ id: rec.superseded_by, title: "Open the newer record" }, ctx),
         " It stays here as history.") : null,
@@ -70,6 +71,7 @@ function draw(panel, rec, ctx) {
         h("dt", {}, "Origin"), h("dd", {}, rec.origin_model || "unknown",
           rec.conversation_id ? h("span", { class: "muted" }, ` · conversation ${rec.conversation_id}`) : null),
         h("dt", {}, "Saved by"), h("dd", {}, savedBy(rec.created_by)),
+        rec.confirmed_by ? [h("dt", {}, "Confirmed"), h("dd", { title: rec.confirmed_at }, `${rec.confirmed_by} · ${ago(rec.confirmed_at)}`)] : null,
         rec.source ? [h("dt", {}, "Source"), h("dd", {}, h("a", {
           href: `#/p/${encodeURIComponent(ctx.pid)}/sources?s=${rec.source.id}`,
         }, rec.source.title || rec.source.id), h("span", { class: "muted" }, ` · ${rec.source.kind.replace("_", " ")}`))] : null,
@@ -116,6 +118,27 @@ function draw(panel, rec, ctx) {
             h("div", { class: "when" }, `${stamp(rec.created_at)} · ${savedBy(rec.created_by)}`)))),
 
       h("section", { class: "psec" }, deleteButton(rec, ctx))));
+}
+
+// The trust tier: a person vouches for the record as written. Only people can; rewording clears it.
+function confirmRow(rec, ctx, reload) {
+  if (rec.lifecycle !== "active") return null;
+  const act = async (confirm) => {
+    try {
+      await api.updateRecord(rec.id, { confirm });
+      await reload(confirm ? "Confirmed" : "Confirmation withdrawn");
+    } catch (e) { toast(e.message, { error: true }); }
+  };
+  if (rec.confirmed_by) {
+    return h("div", { class: "confirm-row done" },
+      h("span", { class: "confirmed-mark" }, icon("check"), "Confirmed"),
+      h("span", { class: "grow" }, `${rec.confirmed_by} vouched for this as written.`),
+      ctx.canWrite ? h("button", { class: "btn ghost sm", type: "button", onclick: () => act(false) }, "Withdraw") : null);
+  }
+  return h("div", { class: "confirm-row" },
+    h("span", { class: "grow" }, rec.origin_model && rec.origin_model !== "human"
+      ? `Written by ${rec.origin_model}. No person has confirmed it.` : "No one has confirmed this yet."),
+    ctx.canWrite ? h("button", { class: "btn sm", type: "button", onclick: () => act(true) }, icon("check"), "Confirm") : null);
 }
 
 function localDate() {

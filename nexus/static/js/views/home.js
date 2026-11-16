@@ -1,6 +1,7 @@
 import { api } from "../api.js";
-import { h, clear, icon, trustBar, ago, modelChip, toast, plural } from "../dom.js";
+import { h, add, clear, icon, trustBar, ago, modelChip, toast, plural } from "../dom.js";
 import { feed } from "./common.js";
+import { codeLine } from "./ui.js";
 
 export async function render(ctx) {
   const [{ projects }, { activity }] = await Promise.all([api.projects(), api.activity({ limit: 15 })]);
@@ -10,8 +11,8 @@ export async function render(ctx) {
   const showNew = () => {
     const err = h("p", { class: "form-error", hidden: true });
     const form = h("form", { class: "inline-form", style: { maxWidth: "560px" } },
-      h("label", { class: "field" }, h("span", {}, "Project name"), h("input", { class: "input", name: "name", required: true, placeholder: "e.g. Environmental AI Research" })),
-      h("label", { class: "field" }, h("span", {}, "Objective"), h("textarea", { class: "textarea", name: "objective", style: { minHeight: "70px" }, placeholder: "What this research is trying to establish" })),
+      h("label", { class: "field" }, h("span", {}, "Project name"), h("input", { class: "input", name: "name", required: true, placeholder: "e.g. Checkout rebuild" })),
+      h("label", { class: "field" }, h("span", {}, "Objective"), h("textarea", { class: "textarea", name: "objective", style: { minHeight: "70px" }, placeholder: "What this project is trying to achieve" })),
       err,
       h("div", { class: "btns" }, h("button", { class: "btn ghost sm", type: "button", onclick: () => { clear(formSlot); ctx.setParam("new", null); } }, "Cancel"),
         h("button", { class: "btn primary sm", type: "submit" }, "Create project")));
@@ -35,15 +36,16 @@ export async function render(ctx) {
   }, {});
   const recordTotal = Object.values(totals).reduce((a, b) => a + b, 0);
 
-  el.append(
+  add(el, 
     h("div", { class: "page-head" },
       h("div", {},
         h("h1", {}, "All projects"),
         h("p", { class: "sub" }, recordTotal
-          ? `${plural(recordTotal, "record")} across ${plural(projects.length, "project")}, saved by you and every connected AI.`
-          : ctx.meta?.brand?.tagline || "")),
-      h("div", { class: "actions" }, h("button", { class: "btn primary", onclick: showNew }, icon("plus"), "New project"))),
+          ? `${plural(recordTotal, "record")} across ${plural(projects.length, "project")}, written by your team and every AI tool it connected.`
+          : "One record of what each project has decided, for every person and AI tool that works on it.")),
+      ctx.canWrite ? h("div", { class: "actions" }, h("button", { class: "btn primary", onclick: showNew }, icon("plus"), "New project")) : null),
     formSlot,
+    ctx.me && !projects.length ? firstRun(ctx, showNew) : null,
     projects.length ? h("div", {},
       h("div", { class: "section-head" }, h("h2", {}, "Projects"), h("span", { class: "meta" }, projects.length)),
       projects.map((p) => {
@@ -58,17 +60,45 @@ export async function render(ctx) {
           h("div", { class: "meta", style: { textAlign: "right" } },
             p.high_gaps ? h("div", { style: { color: "var(--sev-high)" } }, `${p.high_gaps} need attention`) : h("div", {}, "No urgent gaps"),
             h("div", {}, `updated ${ago(p.updated_at)}`)));
-      })) : h("div", { class: "empty" }, h("strong", {}, "No projects yet"),
+      })) : ctx.me ? null : h("div", { class: "empty" }, h("strong", {}, "No projects yet"),
       "Create one here, or let an AI client create it: ask Claude to save something to project memory and it appears in this list."),
 
     activity.length ? h("div", { class: "section" },
       h("div", { class: "section-head" }, h("h2", {}, "Latest across all projects")),
       feed(activity, ctx, { showProject: true })) : null,
 
-    connectSection(ctx));
+    ctx.me ? null : connectSection(ctx));
 
   if (ctx.params.get("new")) queueMicrotask(showNew);
   return { el };
+}
+
+// A new workspace: three things to do, each doable from here.
+function firstRun(ctx, showNew) {
+  const s = ctx.me.service;
+  const admin = ["admin", "owner"].includes(ctx.me.workspace.role);
+  const step = (n, title, text, ...actions) => h("li", { class: "step" },
+    h("span", { class: "step-n", "aria-hidden": "true" }, n),
+    h("div", {}, h("h2", {}, title), h("p", {}, text), ...actions));
+  return h("ol", { class: "first-run" },
+    step("1", "Start with a project",
+      "Load the example to see a populated record with replaced decisions, a disputed assumption and two tools that disagree. It is invented data and safe to delete.",
+      ctx.canWrite ? h("div", { class: "btns" },
+        h("button", { class: "btn primary", type: "button", onclick: async (e) => {
+          e.target.disabled = true;
+          try {
+            const res = await api.loadDemo();
+            toast("Example project loaded");
+            await ctx.refreshShell();
+            ctx.navigate(`/p/${encodeURIComponent(res.project.id)}`);
+          } catch (ex) { toast(ex.message, { error: true }); e.target.disabled = false; }
+        } }, "Load the example project"),
+        h("button", { class: "btn", type: "button", onclick: showNew }, "Start an empty one")) : null),
+    step("2", "Connect the AI tools you use",
+      "Paste this address into any app with connectors. It sends you back here to sign in and choose this workspace.",
+      codeLine(s.mcp_url), h("a", { href: "#/settings/connect" }, "Other ways in: the gateway and the CLI")),
+    admin ? step("3", "Bring your team", "Everyone works from the same record. Invite by email; the role decides what they can change.",
+      h("a", { class: "btn", href: "#/settings/members" }, "Invite teammates")) : null);
 }
 
 function connectSection(ctx) {

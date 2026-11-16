@@ -27,6 +27,12 @@ function append(el, children) {
   }
 }
 
+/** Append children, skipping null and false (the native append would print them as text). */
+export function add(el, ...children) {
+  append(el, children);
+  return el;
+}
+
 export function clear(el, ...children) {
   el.replaceChildren();
   append(el, children);
