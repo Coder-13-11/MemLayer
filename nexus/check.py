@@ -32,8 +32,9 @@ _STOP = frozenset(
     "when which who what how why there their they them these those i you he she may must also only more most".split())
 LIMITATIONS = [
     "Conflicts are found only when the statement gives a subject and value that an active record also uses.",
-    "'Resembles a replaced record' compares wording. A statement that rejects the old approach can resemble it "
-    "too, and a paraphrase with different words will be missed.",
+    "'Resembles a replaced record' compares wording: the statement must be close to the replaced record and use "
+    "a term its replacement dropped. A statement that mentions the old approach in order to remove or explain it "
+    "is flagged too, and a paraphrase with different words will be missed.",
     "Related records are listed, not judged. No language model is involved in this check.",
 ]
 
@@ -50,24 +51,30 @@ def tokens(text: str) -> list[str]:
 
 
 class _Index:
-    """Inverse document frequency over a project's records, so shared rare words count for more than common ones."""
+    """Token sets for every record, computed once, with inverse document frequency so shared rare words count
+    for more than common ones."""
 
-    def __init__(self, texts: Iterable[str]):
-        docs = [set(tokens(t)) for t in texts]
-        self.n = max(len(docs), 1)
-        self.df = Counter(t for d in docs for t in d)
+    def __init__(self, records: Iterable[dict[str, Any]]):
+        self.title: dict[str, frozenset[str]] = {}
+        self.full: dict[str, frozenset[str]] = {}
+        for r in records:
+            self.title[r["id"]] = frozenset(tokens(r["title"]))
+            self.full[r["id"]] = self.title[r["id"]] | frozenset(tokens(r["content"]))
+        self.n = max(len(self.full), 1)
+        self.df = Counter(t for d in self.full.values() for t in d)
 
     def weight(self, token: str) -> float:
         return math.log(1 + self.n / (1 + self.df.get(token, 0))) + 0.1
 
-    def similarity(self, a: str, b: str) -> float:
-        """Weighted share of the shorter text's vocabulary that the other also uses. Needs two shared terms."""
-        ta, tb = set(tokens(a)), set(tokens(b))
-        shared = ta & tb
+    def overlap(self, a: frozenset[str], b: frozenset[str]) -> float:
+        """Weighted share of the smaller vocabulary that the other also uses. Needs two shared terms."""
+        shared = a & b
         if len(shared) < 2:
             return 0.0
-        wa, wb = sum(map(self.weight, ta)), sum(map(self.weight, tb))
-        return sum(map(self.weight, shared)) / min(wa, wb)
+        return sum(map(self.weight, shared)) / min(sum(map(self.weight, a)), sum(map(self.weight, b)))
+
+    def score(self, statement: frozenset[str], record_id: str) -> float:
+        return max(self.overlap(statement, self.title[record_id]), 0.8 * self.overlap(statement, self.full[record_id]))
 
 
 def _brief(r: dict[str, Any]) -> dict[str, Any]:
@@ -91,16 +98,21 @@ def check_statements(snapshot: dict[str, Any], statements: Iterable[Any], *, max
         raise ValidationError(f"check at most {MAX_STATEMENTS} statements at a time")
 
     recs: dict[str, dict[str, Any]] = snapshot["records"]
-    index = _Index(f"{r['title']} {r['content']}" for r in recs.values())
+    index = _Index(recs.values())
     active = [r for r in recs.values() if r["lifecycle"] == "active"]
     gone = [r for r in recs.values() if r["lifecycle"] in ("superseded", "retracted")]
 
-    def score(text: str, r: dict[str, Any]) -> float:
-        return max(index.similarity(text, r["title"]), 0.8 * index.similarity(text, f"{r['title']} {r['content']}"))
+    def names_what_was_dropped(words: frozenset[str], old: dict[str, Any]) -> bool:
+        """A step repeats a replaced record only if it uses a term the old record had and its replacement
+        dropped. Without this, "add unit tests" would resemble "use Jest for unit tests" on shared, generic
+        words alone. A withdrawn record with no replacement has nothing to compare against, so it passes."""
+        newer = recs.get(old.get("superseded_by") or "")
+        return newer is None or bool(words & (index.title[old["id"]] - index.title[newer["id"]]))
 
     results = []
     for s in items:
         text = s["text"].strip()
+        words = frozenset(tokens(text))
         conflicts, replaced, related = [], [], []
         subject, value = normalize_key(s.get("subject")), normalize_key(s.get("value"))
         if subject and value:
@@ -109,14 +121,14 @@ def check_statements(snapshot: dict[str, Any], statements: Iterable[Any], *, max
                     conflicts.append({**_brief(r), "subject": r["subject"], "recorded_value": r["value"],
                                       "stated_value": s["value"]})
         for r in gone:
-            sim = score(text, r)
-            if sim >= RESEMBLES:
+            sim = index.score(words, r["id"])
+            if sim >= RESEMBLES and names_what_was_dropped(words, r):
                 newer = recs.get(r.get("superseded_by") or "")
                 replaced.append({**_brief(r), "similarity": round(sim, 2),
                                  "replaced_by": _brief(newer) if newer else None})
         for r in active:
             if r["kind"] in ("decision", "assumption", "hypothesis", "finding", "question"):
-                sim = score(text, r)
+                sim = index.score(words, r["id"])
                 if sim >= RELATED:
                     related.append({**_brief(r), "similarity": round(sim, 2)})
         replaced.sort(key=lambda x: -x["similarity"])
