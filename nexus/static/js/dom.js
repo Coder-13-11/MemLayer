@@ -69,6 +69,7 @@ const PATHS = {
   down: "M8 3.5v9M4.5 9 8 12.5 11.5 9",
   sparkle: "M8 2.5v3M8 10.5v3M2.5 8h3M10.5 8h3M4.2 4.2l2 2M9.8 9.8l2 2M4.2 11.8l2-2M9.8 6.2l2-2",
   logout: "M6.5 13.5H3.5v-11h3M10 11l3-3-3-3M13 8H6.5",
+  menu: "M2.5 4.5h11M2.5 8h11M2.5 11.5h11",
 };
 
 export function icon(name, cls = "") {

@@ -460,8 +460,7 @@ def create_hosted_app(location: str, public_url: str, *, signup_code: str | None
     def site_page(name: str):
         async def page(request: Request) -> Response:
             slug = request.path_params.get("slug")
-            html_ = pages.render_site(f"{name}/{slug}" if slug else name,
-                                      {**site_values, "SIGNED_IN": "1" if session_user(request) else ""})
+            html_ = pages.render_site(f"{name}/{slug}" if slug else name, site_values)
             if html_ is None:
                 missing = pages.render_site("404", site_values) or "Not found"
                 return HTMLResponse(missing, status_code=404)

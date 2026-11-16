@@ -238,11 +238,17 @@ function renderSidebar() {
 }
 
 // ------------------------------------------------------------------- topbar
+function menuButton() {
+  return h("button", { class: "icon-btn menu-btn", type: "button", "aria-label": "Open navigation",
+    onclick: () => $("app").classList.toggle("nav-open") }, icon("menu"));
+}
+
 function renderTopbar() {
   const r = state.route || { name: "home" };
   const top = $("topbar");
+  $("app").classList.remove("nav-open");  // a navigation happened: put the drawer away
   if (r.name !== "project") {
-    clear(top, h("div", { class: "crumbs" },
+    clear(top, menuButton(), h("div", { class: "crumbs" },
       state.me ? [h("span", {}, state.me.workspace.name), h("span", {}, "/")] : null,
       h("span", { class: "here" }, PAGES[r.name]?.title || "All projects")),
       h("div", { class: "actions" },
@@ -252,7 +258,7 @@ function renderTopbar() {
   const p = state.projects.find((x) => x.id === r.pid);
   const totalGaps = p ? Object.values(p.gap_counts || {}).reduce((a, b) => a + b, 0) : 0;
   const counts = { records: p ? Object.values(p.status_counts || {}).reduce((a, b) => a + b, 0) : 0, gaps: totalGaps };
-  clear(top,
+  clear(top, menuButton(),
     h("div", { class: "crumbs" }, h("a", { href: "#/" }, "Projects"), h("span", {}, "/"),
       h("span", { class: "here" }, p ? p.name : "…")),
     h("nav", { class: "tabs", "aria-label": "Project views" }, TABS.map((t) => h("a", {
@@ -333,6 +339,7 @@ document.addEventListener("keydown", (e) => {
   }
 });
 window.addEventListener("hashchange", route);
+$("view").addEventListener("click", () => $("app").classList.remove("nav-open"));
 // Model chips and other theme-derived colours follow an OS light/dark switch while the page is open.
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
   if (!document.documentElement.dataset.theme) { renderSidebar(); refresh({ shell: false }); }

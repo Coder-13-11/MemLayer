@@ -1,0 +1,27 @@
+<!--title: Quickstart -->
+<h1>Quickstart</h1>
+<p>You will create a workspace, load an example project, connect one AI tool and watch it read the record.</p>
+
+<h2>1. Create a workspace</h2>
+<p><a href="{{SIGNUP_HREF}}">Create an account</a>. You are asked for a workspace name, usually your team. You become its owner.</p>
+
+<h2>2. Load the example project</h2>
+<p>On the first screen choose <strong>Load the example project</strong>. It is an invented checkout rebuild with 18 entries: decisions that were replaced, an assumption that turned out wrong, and two tools that disagree about a measurement. Open <strong>Review</strong> to see what needs attention and <strong>Briefing</strong> to see the text a model is handed.</p>
+
+<h2>3. Connect a tool</h2>
+<p>Pick the way in that matches your tool.</p>
+<h3>An app with connectors</h3>
+<p>Add a custom connector and paste this address. The app sends you back here to sign in and choose the workspace.</p>
+<pre><code>{{MCP_URL}}</code></pre>
+<p>In Claude Code:</p>
+<pre><code>{{CLAUDE_CODE_CMD}}</code></pre>
+<h3>A tool that only takes a base URL</h3>
+<p>Create an API key under <strong>Settings, API keys</strong>, then follow <a href="/docs/gateway">Gateway</a>.</p>
+
+<h2>4. Ask it something the record answers</h2>
+<p>In the connected tool, ask: <em>“We are adding tests to the cart. What should I use?”</em> It should read the project and answer Vitest, and mention that Jest was replaced. Then open <strong>Receipts</strong> in {{BRAND_NAME}}: there is a new one, listing the entries the tool was given.</p>
+
+<h2>5. Try the check</h2>
+<p>Under <strong>Briefing, Check a plan</strong>, enter <code>Add Jest tests for the cart reducer</code>. The check reports that it resembles a replaced record and names what replaced it.</p>
+
+<div class="callout"><p><strong>No tool handy?</strong> The <strong>Playground</strong> sends a message through the gateway using a built-in mock model. It calls no provider and needs no key. The mock is not an AI: it repeats back what it was given, so you can see the briefing arrive.</p></div>

@@ -1,0 +1,52 @@
+<!--title: Security -->
+<h1>Security</h1>
+<p>A shared record that many AI tools read is a high-value target, and a gateway holds provider keys. This page describes what the current version does about that, and what it does not do yet. It has not had an outside audit.</p>
+
+<h2>Separation between workspaces</h2>
+<p>Each workspace's record is stored in its own SQLite file or its own Postgres schema. A request is tied to one workspace before any handler runs: by a browser session and a membership check, by an API key, or by an app's access token. No query filters by workspace inside a shared table of entries, so there is no filter to forget.</p>
+
+<h2>Sign-in and sessions</h2>
+<ul>
+<li>Passwords are stored as scrypt hashes. Session ids, API keys, access and refresh tokens, invitation and reset links are stored only as SHA-256 hashes.</li>
+<li>Session cookies are HttpOnly, SameSite=Lax and Secure on https. Changes from the browser need a custom header and a matching origin.</li>
+<li>Failed sign-ins are limited to ten per fifteen minutes per address and per network.</li>
+<li>Changing or resetting a password signs out other browsers and disconnects every app.</li>
+</ul>
+
+<h2>Connected apps</h2>
+<ul>
+<li>OAuth 2.1 with PKCE. Tokens are bound to this server's MCP address and checked on every request.</li>
+<li>Access tokens last an hour. Refresh tokens are single use and rotate.</li>
+<li>A connection is for one workspace and can be read-only. Role changes and removals apply on the next request.</li>
+<li>Apps cannot delete or confirm entries. There is no tool for either.</li>
+</ul>
+
+<h2>Provider keys</h2>
+<ul>
+<li>Each stored key is sealed with its own data key using AES-256-GCM. The data key is sealed with the service's master key. Both seals are bound to the workspace and the row, so a copied row does not decrypt elsewhere.</li>
+<li>A key is opened only in memory at the moment of a request. No API returns it; the app shows its last four characters.</li>
+<li>Pass-through mode avoids storing provider keys at all.</li>
+<li>Provider base URLs must be https and must not resolve to a private or local address.</li>
+</ul>
+
+<h2>Untrusted text</h2>
+<ul>
+<li>Everything stored is treated as data. The app inserts it as text, never as HTML, and the site sends a content security policy that allows scripts from its own origin only.</li>
+<li>The briefing flattens stored text to one line and neutralises angle brackets, so an entry cannot close the briefing block or imitate its headings. It tells the model not to follow instructions inside.</li>
+<li>Everything an AI tool writes starts as unverified. Only a signed-in person can confirm an entry, and the briefing can be limited to confirmed and evidence-supported entries.</li>
+</ul>
+
+<h2>What is recorded</h2>
+<ul>
+<li>An append-only audit log of changes to access: invitations, roles, keys, provider keys, connections, exports.</li>
+<li>Usage counts per request. The gateway does not store or log prompts or responses.</li>
+</ul>
+
+<h2>Not yet</h2>
+<ul>
+<li>Single sign-on, two-factor sign-in, SCIM.</li>
+<li>Rate limits shared across instances; they are per instance today.</li>
+<li>Customer-managed encryption keys or a cloud key service for the master key. The code has one place to add it.</li>
+<li>An outside penetration test or compliance report.</li>
+</ul>
+<p>The full assessment, including known weaknesses, is in <code>docs/security.md</code> in the repository. To report a problem, contact the operator of this server.</p>

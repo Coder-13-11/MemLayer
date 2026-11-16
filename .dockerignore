@@ -9,3 +9,12 @@ scripts
 .claude
 nexus.egg-info
 demo_output.txt
+.git
+.github
+docs
+benchmarks
+.devdata
+.env
+.env.*
+!.env.example
+.DS_Store

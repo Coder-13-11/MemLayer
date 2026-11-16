@@ -5,6 +5,7 @@ public site's templates. Plain HTML forms that work without JavaScript; every va
 from __future__ import annotations
 
 import html
+import re
 from pathlib import Path
 from typing import Any
 from urllib.parse import quote, urlparse
@@ -206,17 +207,36 @@ def consent_page(req: dict[str, Any], client: dict[str, Any] | None, *, user: di
     return shell("Connect an app", body)
 
 
+_PAGE_NAME = re.compile(r"^[a-z0-9-]+(/[a-z0-9-]+)?$")
+
+
 def render_site(name: str, values: dict[str, str]) -> str | None:
-    """A public page from ``static/site/<name>.html`` inside the shared layout, with ``{{TOKENS}}`` filled in."""
-    page = STATIC_DIR / "site" / f"{name}.html"
-    layout = STATIC_DIR / "site" / "_layout.html"
-    if not page.is_file() or STATIC_DIR / "site" not in page.resolve().parents:
+    """A public page from ``static/site/<name>.html`` inside the shared layout, with ``{{TOKENS}}`` filled in.
+
+    Pages under ``docs/`` also get the documentation's side navigation; other inner pages get a single reading
+    column. Files whose names start with an underscore are parts, not pages, and are never served on their own.
+    """
+    site = STATIC_DIR / "site"
+    if not _PAGE_NAME.match(name):
+        return None
+    page = site / f"{name}.html"
+    if not page.is_file():
         return None
     content = page.read_text(encoding="utf-8")
-    title, _, rest = content.partition("\n") if content.startswith("<!--title:") else ("", "", content)
-    out = layout.read_text(encoding="utf-8").replace("{{CONTENT}}", rest) if layout.is_file() else rest
-    values = {**values, "TITLE": title[len("<!--title:"):-3].strip() if title else BRAND["name"],
-              "PAGE": name.split("/")[0]}
-    for key, value in values.items():
+    title = BRAND["name"]
+    if content.startswith("<!--title:"):
+        first, _, content = content.partition("\n")
+        title = first[len("<!--title:"):-3].strip()
+    section = name.split("/")[0]
+    if section == "docs":
+        nav = (site / "docs" / "_nav.html").read_text(encoding="utf-8")
+        here = "/docs" if name == "docs/index" else f"/{name}"
+        nav = nav.replace(f'href="{here}"', f'href="{here}" aria-current="page"')
+        content = (f'<div class="doc"><nav class="doc-nav" aria-label="Documentation">{nav}</nav>'
+                   f'<article class="prose">{content}</article></div>')
+    elif name != "index":
+        content = f'<div class="doc single"><article class="prose">{content}</article></div>'
+    out = (site / "_layout.html").read_text(encoding="utf-8").replace("{{CONTENT}}", content)
+    for key, value in {**values, "TITLE": e(title), "PAGE": section}.items():
         out = out.replace("{{" + key + "}}", value)
     return out

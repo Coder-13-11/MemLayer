@@ -1,0 +1,38 @@
+<!--title: Apps with connectors -->
+<h1>Apps with connectors</h1>
+<p>{{BRAND_NAME}} is a remote MCP server with OAuth sign-in. Any app that supports custom connectors can use it with one address.</p>
+<pre><code>{{MCP_URL}}</code></pre>
+
+<h2>What happens when you connect</h2>
+<ol>
+<li>The app registers itself and sends you to a {{BRAND_NAME}} page.</li>
+<li>You sign in (or are already signed in), choose a workspace, and choose whether the app may add to the record or only read it.</li>
+<li>The page names the app and the site you will be sent back to. Apps can call themselves anything; the return address cannot be faked.</li>
+<li>The app receives a token for that one workspace. It lasts an hour and is renewed with a single-use refresh token.</li>
+</ol>
+<p>Remove a connection at any time under <strong>Settings, Connect AI tools</strong>. Removing a member, or lowering their role, takes effect on their apps' next request.</p>
+
+<h2>Tools the app gets</h2>
+<table>
+<thead><tr><th>Tool</th><th>Does</th></tr></thead>
+<tbody>
+<tr><td><code>get_project_context</code></td><td>Reads the project: decisions, findings, assumptions, questions, history, open conflicts. Leaves a receipt.</td></tr>
+<tr><td><code>check_plan</code></td><td>Checks intended steps against the record before acting.</td></tr>
+<tr><td><code>search_memory</code>, <code>get_memory_details</code></td><td>Keyword search; one entry with its evidence, links, source and history.</td></tr>
+<tr><td><code>analyze_gaps</code></td><td>The Review list.</td></tr>
+<tr><td><code>save_memory</code>, <code>update_memory</code>, <code>import_source</code>, <code>create_project</code></td><td>Add and correct entries. Not available to read-only connections.</td></tr>
+<tr><td><code>list_projects</code>, <code>get_review_instructions</code></td><td>Lists projects; gives the app instructions for a careful review.</td></tr>
+</tbody>
+</table>
+<p>There is no tool that deletes or confirms. Each entry an app writes records the model's name, the app's name and the person who connected it.</p>
+
+<h2>Getting tools to use it without being asked</h2>
+<p>Models decide for themselves when to call a tool, and they do not always. Three things make reading reliable:</p>
+<ul>
+<li>Add a line to the tool's own instructions file, such as <code>AGENTS.md</code> or <code>CLAUDE.md</code>: <em>“At the start of work, read the project record in NEXUS. Before proposing a plan, call check_plan.”</em></li>
+<li>Print the briefing into the session yourself with a session-start hook: see <a href="/docs/cli">Command line</a>.</li>
+<li>Use the <a href="/docs/gateway">gateway</a>, which adds the briefing to every request.</li>
+</ul>
+
+<h2>Compatibility</h2>
+<p>The server implements the MCP authorization flow with dynamic client registration, PKCE and protected-resource metadata, over the stateless Streamable HTTP transport. It is tested with the official MCP client library. It is built on the 1.x line of the Python SDK; support for the 2026-07 revision of the specification is on the roadmap.</p>

@@ -1,0 +1,41 @@
+<!--title: What it does not do -->
+<h1>What it does not do</h1>
+<p>These are the edges of the current version, stated plainly so you can decide whether it fits.</p>
+
+<h2>The record</h2>
+<ul>
+<li><strong>It does not write itself.</strong> An entry exists because a person or an AI tool saved it. A decision made in a chat and never saved is not in the record.</li>
+<li><strong>It does not judge evidence.</strong> It records that a source is attached and who confirmed the entry. It does not open the source.</li>
+<li><strong>Confirmation is one person's word.</strong> There is no second reviewer or approval rule yet.</li>
+</ul>
+
+<h2>Conflicts and the check</h2>
+<ul>
+<li><strong>No AI model is involved.</strong> Conflicts are found from explicit links, from entries sharing a claim key with different values, and from wording overlap with replaced entries.</li>
+<li><strong>Two entries that disagree only in meaning are not detected</strong> unless someone links them, or a connected AI tool is asked to review the project and records the conflict.</li>
+<li><strong>“Resembles a replaced record” compares words.</strong> A step that rejects the old approach can match it, and a paraphrase with different words will be missed. The repository's verification report gives measured numbers on a labelled test set.</li>
+<li><strong>“Clear” is not approval.</strong> It means nothing was found.</li>
+</ul>
+
+<h2>AI tools</h2>
+<ul>
+<li><strong>It cannot make a model obey.</strong> It places the decision in front of the model and records that it did.</li>
+<li><strong>Models do not always call tools unprompted.</strong> Use the gateway or a session-start hook when reading must be guaranteed.</li>
+<li><strong>Stored text is untrusted.</strong> It is always delivered as labelled data with a notice not to follow instructions inside it, but a model can still be misled by what a teammate or another model wrote. The <code>confirmed</code> briefing setting exists for this.</li>
+</ul>
+
+<h2>The gateway</h2>
+<ul>
+<li>It forwards each wire format to providers that speak it. It does not translate between them, route by cost, retry or fall back.</li>
+<li>It is tested against stand-in servers, not live provider accounts.</li>
+<li>A pinned briefing can be up to 15 minutes behind the record.</li>
+</ul>
+
+<h2>The service</h2>
+<ul>
+<li>No single sign-on, no two-factor sign-in, no SCIM.</li>
+<li>No billing. Limits exist; nothing is charged.</li>
+<li>Rate limits are counted per instance, in memory.</li>
+<li>Search is keyword search. There is no embedding or semantic search.</li>
+<li>It has had no outside security audit.</li>
+</ul>

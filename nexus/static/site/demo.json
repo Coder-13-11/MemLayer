@@ -1,0 +1,86 @@
+{
+ "generated_by": "scripts/build_site_demo.py",
+ "method": "deterministic: subject/value comparison and weighted word overlap; no language model",
+ "results": [
+  {
+   "step": "Add Jest tests for the cart reducer",
+   "verdict": "resembles_replaced",
+   "stamp": "Resembles a replaced record",
+   "tone": "bad",
+   "lines": [
+    [
+     "Replaced",
+     "0398, Use Jest for unit tests"
+    ],
+    [
+     "Now",
+     "0412, Use Vitest for unit tests (confirmed)"
+    ]
+   ],
+   "fine": "Exit code 2 from nexus check, so a CI step can fail on it."
+  },
+  {
+   "step": "Call the Stripe SDK directly from the refund handler",
+   "verdict": "resembles_replaced",
+   "stamp": "Resembles a replaced record",
+   "tone": "bad",
+   "lines": [
+    [
+     "Replaced",
+     "0402, Call the Stripe SDK directly from checkout handlers"
+    ],
+    [
+     "Now",
+     "0409, All payment calls go through the PaymentsPort adapter (confirmed)"
+    ]
+   ],
+   "fine": "Exit code 2 from nexus check, so a CI step can fail on it."
+  },
+  {
+   "step": "Store prices as floats",
+   "verdict": "conflict",
+   "stamp": "Conflicts with a decision",
+   "tone": "bad",
+   "lines": [
+    [
+     "Recorded",
+     "0405, Store money as integer minor units, never floats (confirmed)"
+    ],
+    [
+     "It says",
+     "money.representation = integer minor units"
+    ],
+    [
+     "This says",
+     "money.representation = float"
+    ],
+    [
+     "Related",
+     "0405, Store money as integer minor units, never floats (confirmed)"
+    ]
+   ],
+   "fine": "Exit code 2 from nexus check, so a CI step can fail on it."
+  },
+  {
+   "step": "Poll for payment webhooks for 30 seconds",
+   "verdict": "review",
+   "stamp": "Related records to read",
+   "tone": "warn",
+   "lines": [
+    [
+     "Related",
+     "0419, Payment webhooks arrive within 30 seconds (unverified)"
+    ]
+   ],
+   "fine": "Not judged. The agent is told to read these before it goes on."
+  },
+  {
+   "step": "Rename the README",
+   "verdict": "clear",
+   "stamp": "Nothing found",
+   "tone": "ok",
+   "lines": [],
+   "fine": "Nothing in the record matches. That is not confirmation the step is right."
+  }
+ ]
+}

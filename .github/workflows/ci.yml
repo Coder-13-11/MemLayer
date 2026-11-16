@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: nexus
+          POSTGRES_PASSWORD: nexus
+          POSTGRES_DB: nexus_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U nexus -d nexus_test" --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      NEXUS_TEST_PG_URL: postgresql://nexus:nexus@127.0.0.1:5432/nexus_test
+      NEXUS_SECRET_KEY: MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=   # a fixed test key, not used anywhere real
+    steps:
+      # Actions are pinned to a major version here. For a public repository, pin each to a full commit SHA:
+      # a compromised action in a gateway project's CI is how provider keys get stolen.
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - name: Install the locked dependencies
+        run: |
+          pip install -r requirements.lock
+          pip install --no-deps -e .
+          pip install "pytest>=8"
+      - name: Tests (SQLite and Postgres)
+        run: pytest -q
+      - name: The landing page's example data matches the code
+        run: |
+          python scripts/build_site_demo.py > /dev/null
+          git diff --exit-code nexus/static/site/demo.json
+      - name: Benchmarks still reproduce
+        run: python benchmarks/run.py --check
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: JavaScript parses
+        run: |
+          for f in nexus/static/js/*.js nexus/static/js/views/*.js; do
+            cp "$f" /tmp/check.mjs && node --check /tmp/check.mjs || { echo "syntax error in $f"; exit 1; }
+          done
+          node --check nexus/static/site/site.js
+
+  image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: The container builds and starts
+        run: |
+          docker build -t nexus:ci .
+          docker run -d --name nexus -e NEXUS_PUBLIC_URL=http://localhost:8000 -p 8000:8000 nexus:ci
+          for i in $(seq 1 20); do curl -fsS http://localhost:8000/readyz && exit 0; sleep 1; done
+          docker logs nexus; exit 1

@@ -4,8 +4,12 @@ every request with its original path, so no rewrites are needed.
 Environment (set in the Vercel project):
   DATABASE_URL or POSTGRES_URL   Postgres connection string (the pooled one). Neon from the Vercel Marketplace
                                  sets one of these automatically.
-  NEXUS_PUBLIC_URL            optional; defaults to https://<production domain>
-  NEXUS_SIGNUP_CODE           optional invite code required to create an account
+  NEXUS_PUBLIC_URL               optional; defaults to https://<production domain>
+  NEXUS_SECRET_KEY               required to store provider keys (nexus admin generate-key)
+  NEXUS_SIGNUP, NEXUS_SIGNUP_CODE  optional: open | invite | closed, and the invite code
+  NEXUS_CONTROL_SCHEMA           set to memlayer_accounts when upgrading a database created by MemLayer 0.1
+
+On a serverless host each instance keeps its own rate-limit counters and briefing pins; see docs/deployment.md.
 """
 
 import os
