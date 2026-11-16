@@ -1,4 +1,7 @@
-"""Local web dashboard: JSON API + static single-page app + live change stream.
+"""The memory API (projects, records, review, briefing, check), and the local dashboard that serves it.
+
+The hosted service mounts these same handlers under /api and /v1 with hooks for workspace, role and actor.
+Handlers are plain functions run in worker threads, so database work never blocks the event loop.
 
     nexus web                 # http://127.0.0.1:8765
 
@@ -22,6 +25,7 @@ from importlib import resources
 from typing import Any, Callable
 
 from starlette.applications import Starlette
+from starlette.concurrency import run_in_threadpool
 from starlette.middleware import Middleware
 from starlette.requests import Request
 from starlette.responses import HTMLResponse, JSONResponse, Response, StreamingResponse
@@ -82,13 +86,15 @@ async def _not_found(request: Request, exc: Exception) -> JSONResponse:
 
 
 async def _invalid(request: Request, exc: Exception) -> JSONResponse:
+    if isinstance(exc, (TypeError, AttributeError)):  # a field of the wrong type, not a server fault
+        return _json({"error": "A field in the request has the wrong type."}, 400)
     return _json({"error": str(exc)}, 400)
 
 
-async def _body(request: Request) -> dict[str, Any]:
+def _body(request: Request) -> dict[str, Any]:
     try:
-        data = await request.json()
-    except (json.JSONDecodeError, ValueError):
+        data = json.loads(request.state.raw or b"{}")
+    except (json.JSONDecodeError, ValueError, RecursionError):
         raise m.ValidationError("Request body must be JSON")
     if not isinstance(data, dict):
         raise m.ValidationError("Request body must be a JSON object")
@@ -150,7 +156,7 @@ def create_app(db_path: str | None = None, store: MemoryStore | None = None, pol
         page = static_dir.joinpath("index.html").read_text(encoding="utf-8")
         return HTMLResponse(page.replace("{{BRAND_NAME}}", html.escape(BRAND["name"])))
 
-    async def meta(request: Request) -> JSONResponse:
+    def meta(request: Request) -> JSONResponse:
         mcp = {
             "server_name": BRAND["mcp_server_name"],
             "tools": ["get_project_context", "search_memory", "get_memory_details", "save_memory",
@@ -172,21 +178,21 @@ def create_app(db_path: str | None = None, store: MemoryStore | None = None, pol
             },
         })
 
-    async def projects(request: Request) -> JSONResponse:
+    def projects(request: Request) -> JSONResponse:
         if request.method == "POST":
             authorize("create_project")
-            b = await _body(request)
+            b = _body(request)
             return _json(store.create_project(b.get("name", ""), b.get("description", ""), b.get("objective", "")), 201)
         return _json({"projects": [project_summary(p) for p in store.list_projects()]})
 
-    async def project(request: Request) -> JSONResponse:
+    def project(request: Request) -> JSONResponse:
         ref = request.path_params["pid"]
         if request.method == "DELETE":
             authorize("delete_project")
             return _json(store.delete_project(ref))
         if request.method == "PATCH":
             authorize("write")
-            b = await _body(request)
+            b = _body(request)
             return _json(store.update_project(ref, description=b.get("description"), objective=b.get("objective")))
         snap = store.project_snapshot(ref)
         ctx = build_project_context(snap, max_per_section=8)
@@ -209,16 +215,17 @@ def create_app(db_path: str | None = None, store: MemoryStore | None = None, pol
             "activity": store.activity(ref, limit=12),
         })
 
-    async def records(request: Request) -> JSONResponse:
+    def records(request: Request) -> JSONResponse:
         ref = request.path_params["pid"]
         if request.method == "POST":
             authorize("create_record")
-            b = await _body(request)
+            b = _body(request)
             rec = store.save_record(
                 ref, kind=b.get("kind", "note"), title=b.get("title", ""), content=b.get("content", ""),
                 verification=b.get("verification", "unverified"), importance=b.get("importance", "normal"),
                 subject=b.get("subject") or None, value=b.get("value") or None, tags=b.get("tags") or [],
-                origin_model=b.get("origin_model") or "human", created_by=actor(),
+                # "human" is reserved for a signed-in person; a program that names no model is recorded as itself
+                origin_model=b.get("origin_model") or ("human" if human() else actor()), created_by=actor(),
                 source_text=b.get("source_text") or None, evidence=b.get("evidence") or [],
                 relations=b.get("relations") or [],
             )
@@ -251,14 +258,14 @@ def create_app(db_path: str | None = None, store: MemoryStore | None = None, pol
             } | {"links": links[r["id"]], "rank": matched.get(r["id"]) if matched else None})
         return _json({"records": rows})
 
-    async def record(request: Request) -> JSONResponse:
+    def record(request: Request) -> JSONResponse:
         rid = request.path_params["rid"]
         if request.method == "DELETE":
             authorize("delete_record")
             return _json(store.delete_record(rid))
         if request.method == "PATCH":
             authorize("write")
-            b = await _body(request)
+            b = _body(request)
             allowed = {"title", "content", "verification", "lifecycle", "importance", "subject", "value", "tags",
                        "superseded_by", "add_evidence", "add_relations"}
             kw = {k: v for k, v in b.items() if k in allowed}
@@ -271,11 +278,11 @@ def create_app(db_path: str | None = None, store: MemoryStore | None = None, pol
                                              ("Confirmed" if b.get("confirm") else ""), changed_by=actor(), **kw))
         return _json(store.get_record(rid, include_source_content=request.query_params.get("source") == "1"))
 
-    async def relation(request: Request) -> JSONResponse:
+    def relation(request: Request) -> JSONResponse:
         authorize("write")
         return _json(store.delete_relation(request.path_params["relid"]))
 
-    async def graph(request: Request) -> JSONResponse:
+    def graph(request: Request) -> JSONResponse:
         snap = store.project_snapshot(request.path_params["pid"])
         nodes = [
             {k: r[k] for k in ("id", "kind", "title", "status", "importance", "origin_model", "evidence_count",
@@ -286,15 +293,15 @@ def create_app(db_path: str | None = None, store: MemoryStore | None = None, pol
                  for e in snap["relations"]]
         return _json({"nodes": nodes, "edges": edges})
 
-    async def gaps(request: Request) -> JSONResponse:
+    def gaps(request: Request) -> JSONResponse:
         return _json(analyze_gaps(store.project_snapshot(request.path_params["pid"])))
 
-    async def sources(request: Request) -> JSONResponse:
+    def sources(request: Request) -> JSONResponse:
         snap = store.project_snapshot(request.path_params["pid"])
         per_source = Counter(r["source_id"] for r in snap["records"].values() if r["source_id"])
         return _json({"sources": [{**s, "record_count": per_source[s["id"]]} for s in reversed(snap["sources"])]})
 
-    async def source(request: Request) -> JSONResponse:
+    def source(request: Request) -> JSONResponse:
         src = store.get_source(request.path_params["sid"])
         snap = store.project_snapshot(src["project_id"])
         src["records"] = [
@@ -303,23 +310,23 @@ def create_app(db_path: str | None = None, store: MemoryStore | None = None, pol
         ]
         return _json(src)
 
-    async def import_source(request: Request) -> JSONResponse:
+    def import_source(request: Request) -> JSONResponse:
         authorize("create_record")
-        b = await _body(request)
+        b = _body(request)
         return _json(import_text(
             store, b.get("text", ""), project=request.path_params["pid"], origin_model=b.get("origin_model") or None,
             title=b.get("title") or None, created_by=actor(),
         ), 201)
 
-    async def check(request: Request) -> JSONResponse:
+    def check(request: Request) -> JSONResponse:
         """Preflight: compare statements with what the project has settled. Reads only."""
-        b = await _body(request)
+        b = _body(request)
         statements = b.get("statements") if "statements" in b else [b.get("statement")]
         if not isinstance(statements, list):
             raise m.ValidationError("statements must be a list")
         return _json(check_statements(store.project_snapshot(request.path_params["pid"]), statements))
 
-    async def briefing(request: Request) -> JSONResponse:
+    def briefing(request: Request) -> JSONResponse:
         """The text block a model is handed for this project, and the records that went into it."""
         q = request.query_params
         ref = request.path_params["pid"]
@@ -340,15 +347,15 @@ def create_app(db_path: str | None = None, store: MemoryStore | None = None, pol
             out["receipt_id"] = on_briefing(out, query=q.get("q"))
         return _json(out)
 
-    async def export(request: Request) -> JSONResponse:
+    def export(request: Request) -> JSONResponse:
         ref = request.path_params.get("pid")
         return _json(store.export(ref), 200)
 
-    async def activity(request: Request) -> JSONResponse:
+    def activity(request: Request) -> JSONResponse:
         q = request.query_params
-        return _json({"activity": store.activity(q.get("project") or None, limit=int(q.get("limit", 60)))})
+        return _json({"activity": store.activity(q.get("project") or None, limit=int(q["limit"]) if q.get("limit", "").isdigit() else 60)})
 
-    async def search(request: Request) -> JSONResponse:
+    def search(request: Request) -> JSONResponse:
         q = request.query_params.get("q", "")
         res = store.search(q, include_inactive=True, limit=20)
         needle = q.strip().lower()
@@ -382,16 +389,16 @@ def create_app(db_path: str | None = None, store: MemoryStore | None = None, pol
         return StreamingResponse(stream(), media_type="text/event-stream",
                                  headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
-    async def revision(request: Request) -> JSONResponse:
+    def revision(request: Request) -> JSONResponse:
         """For pages that poll: the current fingerprint, and what happened since ``since``."""
         since = request.query_params.get("since") or None
         return _json({"revision": store.revision(), "activity": store.activity(None, 20, since) if since else [],
                       "latest": (store.activity(None, 1) or [{"at": None}])[0]["at"]})
 
-    async def not_found(request: Request) -> Response:
+    def not_found(request: Request) -> Response:
         return _json({"error": "Not found"}, 404)
 
-    async def context(request: Request) -> JSONResponse:
+    def context(request: Request) -> JSONResponse:
         ref = request.path_params["pid"]
         matched = None
         if request.query_params.get("q"):
@@ -400,29 +407,36 @@ def create_app(db_path: str | None = None, store: MemoryStore | None = None, pol
             matched = [h["id"] for h in hits["results"]]
         return _json(build_project_context(store.project_snapshot(ref), matched_ids=matched))
 
+    def T(handler: Callable[[Request], Response]):
+        """Read the body on the event loop, then run the handler (and its database work) in a worker thread."""
+        async def endpoint(request: Request) -> Response:
+            request.state.raw = await request.body() if request.method in ("POST", "PATCH", "PUT", "DELETE") else b""
+            return await run_in_threadpool(handler, request)
+        return endpoint
+
     P = prefix
     routes = [
         *([] if hosted else [Route("/", index)]),
-        Route(f"{P}/meta", meta),
-        Route(f"{P}/projects", projects, methods=["GET", "POST"]),
-        Route(f"{P}/projects/{{pid}}", project, methods=["GET", "PATCH", "DELETE"]),
-        Route(f"{P}/projects/{{pid}}/records", records, methods=["GET", "POST"]),
-        Route(f"{P}/projects/{{pid}}/graph", graph),
-        Route(f"{P}/projects/{{pid}}/gaps", gaps),
-        Route(f"{P}/projects/{{pid}}/sources", sources),
-        Route(f"{P}/projects/{{pid}}/context", context),
-        Route(f"{P}/projects/{{pid}}/briefing", briefing),
-        Route(f"{P}/projects/{{pid}}/check", check, methods=["POST"]),
-        Route(f"{P}/projects/{{pid}}/export", export),
-        Route(f"{P}/projects/{{pid}}/import", import_source, methods=["POST"]),
-        Route(f"{P}/records/{{rid}}", record, methods=["GET", "PATCH", "DELETE"]),
-        Route(f"{P}/relations/{{relid}}", relation, methods=["DELETE"]),
-        Route(f"{P}/sources/{{sid}}", source),
-        Route(f"{P}/activity", activity),
-        Route(f"{P}/search", search),
-        Route(f"{P}/revision", revision),
+        Route(f"{P}/meta", T(meta)),
+        Route(f"{P}/projects", T(projects), methods=["GET", "POST"]),
+        Route(f"{P}/projects/{{pid}}", T(project), methods=["GET", "PATCH", "DELETE"]),
+        Route(f"{P}/projects/{{pid}}/records", T(records), methods=["GET", "POST"]),
+        Route(f"{P}/projects/{{pid}}/graph", T(graph)),
+        Route(f"{P}/projects/{{pid}}/gaps", T(gaps)),
+        Route(f"{P}/projects/{{pid}}/sources", T(sources)),
+        Route(f"{P}/projects/{{pid}}/context", T(context)),
+        Route(f"{P}/projects/{{pid}}/briefing", T(briefing)),
+        Route(f"{P}/projects/{{pid}}/check", T(check), methods=["POST"]),
+        Route(f"{P}/projects/{{pid}}/export", T(export)),
+        Route(f"{P}/projects/{{pid}}/import", T(import_source), methods=["POST"]),
+        Route(f"{P}/records/{{rid}}", T(record), methods=["GET", "PATCH", "DELETE"]),
+        Route(f"{P}/relations/{{relid}}", T(relation), methods=["DELETE"]),
+        Route(f"{P}/sources/{{sid}}", T(source)),
+        Route(f"{P}/activity", T(activity)),
+        Route(f"{P}/search", T(search)),
+        Route(f"{P}/revision", T(revision)),
         *([] if hosted else [Route(f"{P}/events", events)]),
-        Route(f"{P}/{{rest:path}}", not_found, methods=["GET", "POST", "PATCH", "PUT", "DELETE"]),
+        Route(f"{P}/{{rest:path}}", T(not_found), methods=["GET", "POST", "PATCH", "PUT", "DELETE"]),
         *([] if hosted else [Mount("/static", app=StaticFiles(directory=str(static_dir)), name="static")]),
     ]
     from .tenancy import LimitReached, PermissionDenied
@@ -435,7 +449,7 @@ def create_app(db_path: str | None = None, store: MemoryStore | None = None, pol
 
     app = Starlette(routes=routes, middleware=[] if hosted else [Middleware(LocalOnly)],
                     exception_handlers={m.NotFound: _not_found, LimitReached: _limit, m.ValidationError: _invalid,
-                                        PermissionDenied: _forbidden})
+                                        PermissionDenied: _forbidden, TypeError: _invalid, AttributeError: _invalid})
     if not hosted:
         app.state.store = store
     return app

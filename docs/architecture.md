@@ -90,7 +90,7 @@ sources, preserve conflicts as visible objects, and never silently resolve them 
 cleared by any change to the entry's wording.
 *Why:* shared memory multiplies the damage of a poisoned or mistaken write. Evidence can be attached by a model;
 a person's vouching cannot be. This is the same mechanism as provenance, not an add-on, and it lets a briefing
-be restricted to entries that are confirmed or evidenced.
+be restricted to entries a person confirmed.
 
 ### D6. The check is deterministic, narrow and labelled
 

@@ -37,12 +37,17 @@ _HEADER = (
 )
 
 
+_NEUTRAL = str.maketrans({"<": "‹", ">": "›", "[": "(", "]": ")", '"': "'"})
+
+
 def estimate_tokens(text: str) -> int:
     return (len(text) + 3) // 4
 
 
 def _flat(text: str, limit: int) -> str:
-    text = re.sub(r"\s+", " ", text or "").strip().replace("<", "‹").replace(">", "›")
+    # One line, and none of the characters the block's own structure is made of: angle brackets (the block's
+    # tags), square brackets (record ids) and double quotes (the opening tag's attribute).
+    text = re.sub(r"\s+", " ", text or "").strip().translate(_NEUTRAL)
     return text if len(text) <= limit else text[: limit - 1].rstrip() + "…"
 
 
@@ -53,20 +58,22 @@ def _trust(r: dict[str, Any]) -> str:
 
 
 def _line(r: dict[str, Any], detail: int = 220) -> str:
-    head = f"- [{r['id']}] {_flat(r['title'], 200)} ({_trust(r)}"
-    if r.get("origin_model"):
-        head += f", from {_flat(r['origin_model'], 40)}"
-    head += ")"
+    """The id and the trust tag come first, written by NEXUS, so nothing in the stored text that follows can
+    pass for them. Any longer explanation goes on a line marked as a note."""
+    tag = _trust(r) + (f", from {_flat(r['origin_model'], 40)}" if r.get("origin_model") else "")
+    head = f"- [{r['id']}] ({tag}) {_flat(r['title'], 200)}"
     body = _flat(r.get("content") or "", detail)
-    return head + (f"\n  {body}" if body and body.lower() != r["title"].strip().lower() else "")
+    return head + (f"\n  note: {body}" if body and body.lower() != r["title"].strip().lower() else "")
 
 
 def build_briefing(snapshot: dict[str, Any], *, budget_tokens: int = DEFAULT_BUDGET, policy: str = "all",
                    focus_ids: Iterable[str] | None = None) -> dict[str, Any]:
     """Returns ``{"text", "record_refs", "token_estimate", "omitted"}``.
 
-    ``policy="confirmed"`` includes only records a person confirmed or that carry evidence: the setting for
-    teams that do not want unreviewed AI-written claims placed in front of another model. ``focus_ids`` (from a
+    ``policy="confirmed"`` includes only records a person confirmed: the setting for teams that do not want
+    unreviewed AI-written claims placed in front of another model. Evidence alone does not qualify, because a
+    program can attach evidence to its own claim; replaced records are listed only when a person confirmed what
+    replaced them, and conflicts only when they involve a confirmed record. ``focus_ids`` (from a
     search) moves matching records to the front of each section.
     """
     if policy not in POLICIES:
@@ -77,7 +84,7 @@ def build_briefing(snapshot: dict[str, Any], *, budget_tokens: int = DEFAULT_BUD
     focus = set(focus_ids or ())
 
     def trusted(r: dict[str, Any]) -> bool:
-        return policy == "all" or bool(r.get("confirmed_by")) or r["status"] == "evidence_supported"
+        return policy == "all" or bool(r.get("confirmed_by"))
 
     def ranked(kinds: tuple[str, ...]) -> list[dict[str, Any]]:
         rows = [r for r in recs.values() if r["lifecycle"] == "active" and r["kind"] in kinds and trusted(r)]
@@ -88,8 +95,10 @@ def build_briefing(snapshot: dict[str, Any], *, budget_tokens: int = DEFAULT_BUD
         return rows
 
     gaps = analyze_gaps(snapshot)
-    conflicts = [g for g in gaps["gaps"] if g["type"] in ("contradiction", "possible_contradiction", "challenged_claim")]
-    replaced = sorted((r for r in recs.values() if r["lifecycle"] in ("superseded", "retracted")),
+    conflicts = [g for g in gaps["gaps"] if g["type"] in ("contradiction", "possible_contradiction", "challenged_claim")
+                 and (policy == "all" or any(recs[i].get("confirmed_by") for i in g["record_ids"]))]
+    replaced = sorted((r for r in recs.values() if r["lifecycle"] in ("superseded", "retracted")
+                       and (policy == "all" or (recs.get(r.get("superseded_by") or "") or {}).get("confirmed_by"))),
                       key=lambda r: (0 if r["id"] in focus else 1, -r["importance"], r["id"]))
 
     used: dict[str, dict[str, Any]] = {}
@@ -97,7 +106,7 @@ def build_briefing(snapshot: dict[str, Any], *, budget_tokens: int = DEFAULT_BUD
     omitted: dict[str, int] = {}
     head = [f'<nexus_project_context project="{_flat(project["name"], 120)}">', _HEADER]
     if project.get("objective"):
-        head.append(f"OBJECTIVE: {_flat(project['objective'], 400)}")
+        head.append(f"OBJECTIVE (as the team wrote it): {_flat(project['objective'], 400)}")
     spent = estimate_tokens("\n".join(head)) + 12
 
     def add_section(title: str, lines: list[tuple[str, list[str]]]) -> None:
@@ -123,9 +132,9 @@ def build_briefing(snapshot: dict[str, Any], *, budget_tokens: int = DEFAULT_BUD
                 [(f"- {_flat(g['summary'], 300)} [{', '.join(g['record_ids'][:4])}]", g["record_ids"][:4])
                  for g in conflicts])
     add_section("REPLACED OR WITHDRAWN (do not rely on these or propose them again)", [
-        (f"- [{r['id']}] {_flat(r['title'], 160)} ({r['status']}"
-         + (f"; now [{r['superseded_by']}] {_flat(recs[r['superseded_by']]['title'], 120)}"
-            if r.get("superseded_by") in recs else "") + ")",
+        (f"- [{r['id']}] ({r['status']}) {_flat(r['title'], 160)}"
+         + (f" -> now [{r['superseded_by']}] {_flat(recs[r['superseded_by']]['title'], 120)}"
+            if r.get("superseded_by") in recs else ""),
          [r["id"]] + ([r["superseded_by"]] if r.get("superseded_by") in recs else []))
         for r in replaced])
     add_section("ASSUMPTIONS (treat as unproven unless marked)", [(_line(r, 160), [r["id"]])

@@ -37,7 +37,7 @@ def test_invited_people_join_with_their_role_and_see_the_same_projects(team):
         me = p[name].get("/api/me").json()
         assert me["workspace"]["name"] == "Acme" and me["workspace"]["role"] == role
         assert len(me["workspaces"]) == 1  # an invited person does not also get an empty personal workspace
-        assert me["user"]["email_verified_at"]  # they followed a link sent to that address
+        assert me["user"]["email_verified_at"] is None  # joining by link does not prove the mailbox is theirs
         assert [x["name"] for x in p[name].get("/api/projects").json()["projects"]] == ["Shared project"]
     members = p["vera"].get("/api/workspace/members").json()
     assert [m["role"] for m in members["members"]] == ["owner", "admin", "editor", "viewer"]

@@ -11,6 +11,7 @@ import json
 import secrets
 import time
 from datetime import datetime, timedelta, timezone
+from decimal import Decimal
 from typing import Any, Iterable
 
 from .models import NotFound, ValidationError
@@ -51,7 +52,10 @@ class MeteringMixin:
         since = (datetime.now(timezone.utc) - timedelta(days=days - 1)).strftime("%Y-%m-%dT00:00:00")
         with self._lock:
             def rows(sql: str) -> list[dict[str, Any]]:
-                return [dict(r) for r in self.conn.execute(sql, (workspace_id, since))]
+                # Postgres returns sums as Decimal (and NULL for an empty group); both become plain integers.
+                return [{k: int(v or 0) if isinstance(v, Decimal) or (v is None and k not in ("provider", "model", "actor"))
+                         else v for k, v in dict(r).items()}
+                        for r in self.conn.execute(sql, (workspace_id, since))]
 
             by_day = rows("SELECT substr(at, 1, 10) AS day, channel, count(*) AS calls, "
                           "sum(input_tokens) AS input_tokens, sum(output_tokens) AS output_tokens "
@@ -136,8 +140,7 @@ class MeteringMixin:
 
         token = "nxe_" + secrets.token_urlsafe(32)
         with self._tx() as c:
-            c.execute("DELETE FROM email_tokens WHERE expires_at < ? OR (user_id = ? AND purpose = ?)",
-                      (int(time.time()), user_id, purpose))
+            c.execute("DELETE FROM email_tokens WHERE expires_at < ?", (int(time.time()),))
             c.execute("INSERT INTO email_tokens (token_hash, user_id, purpose, expires_at) VALUES (?,?,?,?)",
                       (digest(token), user_id, purpose, int(time.time()) + EMAIL_TOKEN_TTL[purpose]))
         return token
@@ -156,9 +159,10 @@ class MeteringMixin:
         with self._tx() as c:
             row = c.execute("SELECT user_id FROM email_tokens WHERE token_hash = ? AND purpose = ? AND expires_at > ?",
                             (digest(token or ""), purpose, int(time.time()))).fetchone()
-            if not row:
+            if not row or c.execute("DELETE FROM email_tokens WHERE token_hash = ?", (digest(token),)).rowcount != 1:
                 return None
-            c.execute("DELETE FROM email_tokens WHERE token_hash = ?", (digest(token),))
+            # Using one link retires every other link of the same kind for that account.
+            c.execute("DELETE FROM email_tokens WHERE user_id = ? AND purpose = ?", (row["user_id"], purpose))
             return row["user_id"]
 
     def queue_email(self, to_email: str, subject: str, body: str) -> str:
@@ -176,6 +180,8 @@ class MeteringMixin:
         with self._tx() as c:
             c.execute("UPDATE outbox SET sent_at = ?, error = ? WHERE id = ?",
                       (None if error else now(), (error or "")[:500] or None, message_id))
+            if not error:  # a delivered message's links should not also sit in the database
+                c.execute("UPDATE outbox SET body = '(sent)' WHERE id = ?", (message_id,))
 
     def outbox(self, unsent_only: bool = True, limit: int = 50) -> list[dict[str, Any]]:
         with self._lock:
@@ -185,11 +191,4 @@ class MeteringMixin:
         return [dict(r) for r in rows]
 
 
-def require_under_limit(count: int, limit: int, what: str) -> None:
-    from .tenancy import LimitReached
-
-    if count >= limit:
-        raise LimitReached(f"This workspace's plan allows {limit} {what}.")
-
-
-__all__ = ["MeteringMixin", "require_under_limit", "ValidationError"]
+__all__ = ["MeteringMixin", "ValidationError"]

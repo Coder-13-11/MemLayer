@@ -48,6 +48,7 @@ from dataclasses import dataclass
 from typing import Any, AsyncIterator
 from urllib.parse import urlparse
 
+import anyio
 import httpx
 from starlette.concurrency import run_in_threadpool
 from starlette.requests import Request
@@ -64,6 +65,9 @@ MAX_BODY = 12 * 1024 * 1024
 FORWARD_REQUEST = ("anthropic-version", "anthropic-beta", "openai-organization", "openai-project", "openai-beta")
 FORWARD_RESPONSE = ("request-id", "x-request-id", "retry-after", "openai-processing-ms")
 TIMEOUT = httpx.Timeout(connect=10, read=600, write=60, pool=10)
+
+
+_NAT64 = ipaddress.ip_network("64:ff9b::/96")
 
 
 class GatewayError(Exception):
@@ -118,7 +122,7 @@ def assert_public_upstream(url: str) -> None:
         raise GatewayError(502, "The provider's address could not be resolved.", "upstream_error") from None
     for info in infos:
         ip = ipaddress.ip_address(info[4][0])
-        if not ip.is_global:
+        if not ip.is_global or ip in _NAT64:  # NAT64 addresses embed an IPv4 address, which may be private
             raise GatewayError(400, "The provider base URL points at a private or local address, which is not allowed.")
 
 
@@ -198,7 +202,7 @@ def mock_reply(wire: str, body: dict[str, Any]) -> str:
 
     system = system_text(wire, body)
     ids = list(dict.fromkeys(re.findall(r"\[(rec_[0-9a-f]{12})\]", system)))
-    decisions = re.findall(r"^- \[rec_[0-9a-f]{12}\] (.+?) \(", system.split("DECISIONS", 1)[1].split("\n\n", 1)[0], re.M) \
+    decisions = re.findall(r"^- \[rec_[0-9a-f]{12}\] \([^)]*\) (.+)$", system.split("DECISIONS", 1)[1].split("\n\n", 1)[0], re.M) \
         if "<nexus_project_context" in system and "DECISIONS" in system else []
     lines = ["NEXUS mock model. No AI provider was called, so this is not a real answer."]
     if "<nexus_project_context" in system:
@@ -368,9 +372,13 @@ class Gateway:
         model = body.get("model")
         if not isinstance(model, str) or not model:
             raise GatewayError(400, "The request needs a model.")
+        for name, kinds in (("messages", list), ("system", (str, list)), ("instructions", str)):
+            if body.get(name) is not None and not isinstance(body[name], kinds):
+                raise GatewayError(400, f"'{name}' has the wrong type for this endpoint.")
         provider = self.choose_provider(wire, model, headers.get("x-nexus-provider"), ws["id"], passthrough)
 
-        upstream_headers = {"content-type": "application/json"}
+        # identity: the stream is relayed byte for byte, so it must not arrive compressed
+        upstream_headers = {"content-type": "application/json", "accept-encoding": "identity"}
         for name in FORWARD_REQUEST:
             if headers.get(name):
                 upstream_headers[name] = headers[name]
@@ -379,7 +387,8 @@ class Gateway:
             base = self.settings.upstreams.get(provider)
             if passthrough:
                 for name in ("authorization", "x-api-key"):
-                    if headers.get(name):
+                    # A NEXUS key placed in a provider header by mistake must never reach the provider.
+                    if headers.get(name) and "nxk_" not in headers[name]:
                         upstream_headers[name] = headers[name]
                 if not ({"authorization", "x-api-key"} & set(upstream_headers)):
                     raise GatewayError(401, "Pass-through mode needs your provider key in Authorization or x-api-key.",
@@ -387,6 +396,10 @@ class Gateway:
                 if provider == "openai_compatible":
                     raise GatewayError(400, "An OpenAI-compatible provider needs its base URL stored under Providers.")
             else:
+                if key.get("role") == "viewer":
+                    raise GatewayError(403, "A read-only key cannot spend the workspace's stored provider key. Use a "
+                                            "read-and-write key, or send your own provider key with x-nexus-key.",
+                                       "permission_error")
                 try:
                     cred = self.accounts.open_credential(ws["id"], provider, headers.get("x-nexus-credential") or "default")
                 except NotFound as e:
@@ -476,7 +489,7 @@ class Gateway:
                 raise GatewayError(413, "The request body is too large.")
             try:
                 body = json.loads(raw)
-            except ValueError:
+            except (ValueError, RecursionError):
                 raise GatewayError(400, "The request body must be JSON.") from None
             if not isinstance(body, dict):
                 raise GatewayError(400, "The request body must be a JSON object.")
@@ -506,7 +519,8 @@ class Gateway:
                     for c in chunks:
                         yield c
                 finally:
-                    await run_in_threadpool(self.record, call, 200, usage, started)
+                    with anyio.CancelScope(shield=True):
+                        await run_in_threadpool(self.record, call, 200, usage, started)
 
             return StreamingResponse(play(), media_type="text/event-stream", headers={**ours, "cache-control": "no-cache"})
 
@@ -524,8 +538,14 @@ class Gateway:
                 headers[name.lower()] = value
         is_events = "text/event-stream" in headers["content-type"]
         if not is_events:
-            content = await upstream.aread()
-            await upstream.aclose()
+            try:
+                content = await upstream.aread()
+            except httpx.HTTPError as e:
+                await run_in_threadpool(self.record, call, 502, usage, started)
+                return error_response(wire, GatewayError(502, f"The provider's answer was cut off ({type(e).__name__}).",
+                                                         "upstream_error"), ours)
+            finally:
+                await upstream.aclose()
             try:
                 read_usage(wire, json.loads(content), usage)
             except ValueError:
@@ -540,8 +560,11 @@ class Gateway:
                     tail = self._scan(wire, tail + chunk, usage, keep_partial=True)
                     yield chunk
             finally:
-                await upstream.aclose()
-                await run_in_threadpool(self.record, call, upstream.status_code, usage, started)
+                # Shielded: when the client goes away this task is cancelled, and the request still has to be
+                # closed upstream and counted.
+                with anyio.CancelScope(shield=True):
+                    await upstream.aclose()
+                    await run_in_threadpool(self.record, call, upstream.status_code, usage, started)
 
         return StreamingResponse(relay(), status_code=upstream.status_code, headers={**headers, "cache-control": "no-cache"})
 

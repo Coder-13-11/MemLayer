@@ -13,6 +13,7 @@ demo_output.txt
 .vercel/
 .env
 .env.*
+!.env.example
 build/
 dist/
 .impeccable/hook.cache.json

@@ -137,6 +137,8 @@ def import_text(
     source_kind: str | None = None,
     created_by: str = "importer",
 ) -> dict[str, Any]:
+    if not isinstance(text, str):
+        raise m.ValidationError("text must be a string")
     meta, body = parse_frontmatter(text)
     project = project or meta.get("project")
     if not project:

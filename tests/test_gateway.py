@@ -123,7 +123,7 @@ def test_chat_completions_adds_the_briefing_after_the_clients_system_prompt(gw):
     assert roles == ["system", "system", "user"]
     assert sent["body"]["messages"][0]["content"] == "You are the client's own prompt."  # untouched and first
     briefing = sent["body"]["messages"][1]["content"]
-    assert briefing.startswith("<nexus_project_context") and "Use Vitest for unit tests (confirmed" in briefing
+    assert briefing.startswith("<nexus_project_context") and "(confirmed, from claude-code) Use Vitest" in briefing
     assert sent["body"]["messages"][2] == body["messages"][1]
     # The stored provider key went upstream; the NEXUS key did not.
     assert sent["headers"]["authorization"] == f"Bearer {OPENAI_KEY}"

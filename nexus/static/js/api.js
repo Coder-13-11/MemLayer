@@ -99,5 +99,16 @@ export const api = {
   receipt: (id) => request("GET", `/api/workspace/receipts/${enc(id)}`),
   audit: () => request("GET", "/api/workspace/audit"),
   loadDemo: () => request("POST", "/api/workspace/demo", {}),
+  // A plain link would not carry the workspace header, so the file is fetched and handed to the browser.
+  exportWorkspace: async () => {
+    const res = await fetch("/api/workspace/export", { headers: workspace ? { "X-Nexus-Workspace": workspace } : {} });
+    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || "Export failed");
+    const url = URL.createObjectURL(await res.blob());
+    const a = Object.assign(document.createElement("a"), { href: url, download: `nexus-${workspace || "workspace"}.json` });
+    document.body.append(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  },
   playground: (body) => request("POST", "/api/workspace/playground", body),
 };

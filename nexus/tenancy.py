@@ -165,6 +165,12 @@ class TenancyMixin:
                 "ORDER BY m.created_at", (workspace_id,)).fetchall()
         return [dict(r) for r in rows]
 
+    def _lock_workspace(self, c: Any, workspace_id: str) -> None:
+        """Hold the workspace's row for this transaction, so two instances cannot each remove "the other" owner.
+        SQLite already allows one writer at a time."""
+        if self.dialect == "pg":
+            c.execute("SELECT id FROM workspaces WHERE id = ? FOR UPDATE", (workspace_id,))
+
     def _owner_count(self, c: Any, workspace_id: str) -> int:
         return c.execute("SELECT count(*) FROM memberships WHERE workspace_id = ? AND role = 'owner'",
                          (workspace_id,)).fetchone()[0]
@@ -174,6 +180,7 @@ class TenancyMixin:
         if role not in ROLES:
             raise ValidationError(f"role must be one of {', '.join(ROLES)}")
         with self._tx() as c:
+            self._lock_workspace(c, workspace_id)
             row = c.execute("SELECT role FROM memberships WHERE workspace_id = ? AND user_id = ?",
                             (workspace_id, user_id)).fetchone()
             if not row:
@@ -191,6 +198,7 @@ class TenancyMixin:
     def remove_member(self, workspace_id: str, user_id: str, *, by_role: str) -> None:
         """Remove a member (or leave). Their connected apps lose access to this workspace at once."""
         with self._tx() as c:
+            self._lock_workspace(c, workspace_id)
             row = c.execute("SELECT role FROM memberships WHERE workspace_id = ? AND user_id = ?",
                             (workspace_id, user_id)).fetchone()
             if not row:
@@ -280,14 +288,15 @@ class TenancyMixin:
             if inv["email"] != user["email"].lower():
                 raise PermissionDenied(f"This invitation was sent to {inv['email']}. Sign in with that address.")
             ts = now()
-            c.execute("UPDATE invitations SET accepted_at = ? WHERE id = ?", (ts, inv["id"]))
+            if c.execute("UPDATE invitations SET accepted_at = ? WHERE id = ? AND accepted_at IS NULL",
+                         (ts, inv["id"])).rowcount != 1:
+                raise ValidationError("This invitation has expired or was already used. Ask for a new one.")
             if not c.execute("SELECT 1 FROM memberships WHERE workspace_id = ? AND user_id = ?",
                              (inv["workspace_id"], user["id"])).fetchone():
                 c.execute("INSERT INTO memberships (workspace_id, user_id, role, created_at) VALUES (?,?,?,?)",
                           (inv["workspace_id"], user["id"], inv["role"], ts))
-            # Following a link sent to this address shows the address is theirs.
-            c.execute("UPDATE users SET email_verified_at = coalesce(email_verified_at, ?) WHERE id = ?",
-                      (ts, user["id"]))
+            # Joining does not mark the address as confirmed: the admin who created the invitation can read
+            # its link, so following it proves nothing about who owns the mailbox.
         return self.get_workspace(inv["workspace_id"])
 
 

@@ -164,7 +164,10 @@ def consent_page(req: dict[str, Any], client: dict[str, Any] | None, *, user: di
     client = client or {}
     # Any app can register under any name, so the page also shows where the person will be sent back to.
     app_name = e(client.get("client_name") or "An app")
-    back_to = e(urlparse(req["params"]["redirect_uri"]).netloc or req["params"]["redirect_uri"])
+    # hostname, not netloc: "https://claude.ai@evil.example/" must read as evil.example
+    target = urlparse(req["params"]["redirect_uri"])
+    host = (target.hostname or "") + (f":{target.port}" if target.hostname and target.port else "")
+    back_to = e(host or f"the {target.scheme} app on this device")
     rid = e(req["id"])
     signup = mode == "signup" and signup_open
     if user:

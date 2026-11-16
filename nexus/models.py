@@ -44,6 +44,8 @@ def require_text(value: Any, field: str, max_len: int = MAX_TITLE, allow_empty: 
     if not isinstance(value, str):
         raise ValidationError(f"{field} must be a string")
     value = value.strip()
+    if "\x00" in value:
+        raise ValidationError(f"{field} contains a character that cannot be stored")
     if not value and not allow_empty:
         raise ValidationError(f"{field} must not be empty")
     if len(value) > max_len:

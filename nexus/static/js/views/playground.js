@@ -20,7 +20,7 @@ export async function render(ctx) {
         projects.map((p) => h("option", { value: p.id, selected: p.id === ctx.params.get("project") || projects.length === 1 }, p.name)))),
       field("Records included", h("select", { class: "select", name: "context" },
         h("option", { value: "all" }, "Every record, labelled"),
-        h("option", { value: "confirmed" }, "Only confirmed or evidenced")))),
+        h("option", { value: "confirmed" }, "Only records a person confirmed")))),
     h("div", { class: "row" },
       field("Model", h("input", { class: "input", name: "model", value: "mock-1", required: true }),
         providers.length ? `Stored provider keys: ${providers.map((p) => p.provider).join(", ")}. Type one of their model names to call it.`

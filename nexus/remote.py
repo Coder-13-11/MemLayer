@@ -133,7 +133,7 @@ def add_parsers(sub: Any, default_db: str) -> None:
     p.add_argument("project")
     p.add_argument("--budget", type=int, default=DEFAULT_BUDGET, help="size limit in tokens")
     p.add_argument("--policy", choices=["all", "confirmed"], default="all",
-                   help="'confirmed' leaves out records nobody has confirmed or evidenced")
+                   help="'confirmed' leaves out records no person has confirmed")
     p.add_argument("--query", help="put records matching these words first")
     p.add_argument("--json", action="store_true")
     p = sub.add_parser("check", help="check planned steps against the record; exit 2 on a conflict")

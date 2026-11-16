@@ -39,6 +39,13 @@ async def _body(request: Request) -> dict[str, Any]:
     return data
 
 
+def _int(request: Request, name: str, default: int) -> int:
+    try:
+        return int(request.query_params.get(name, default))
+    except ValueError:
+        raise ValidationError(f"{name} must be a whole number") from None
+
+
 def account_routes(accounts: Any, settings: Settings, gateway: Gateway, mailer: Any,
                    client_ip: Callable[[Request], str], load_demo: Callable[[Any], dict[str, Any]]) -> list[Route]:
     def audit(request: Request, action: str, target: str | None = None, **detail: Any) -> None:
@@ -62,8 +69,9 @@ def account_routes(accounts: Any, settings: Settings, gateway: Gateway, mailer: 
         if request.method == "DELETE":
             if not accounts.verify_password(p.user["id"], str(b.get("password", ""))):
                 raise ValidationError("That password is not correct.")
-            accounts.audit("account.deleted", actor=p.actor, user_id=p.user["id"], ip=client_ip(request))
-            return _json(accounts.delete_user(p.user["id"]))
+            out = accounts.delete_user(p.user["id"])
+            accounts.audit("account.deleted", actor=p.actor, ip=client_ip(request))
+            return _json(out)
         user = accounts.get_user(p.user["id"])
         return _json({
             "user": {k: user[k] for k in ("id", "email", "name", "created_at", "email_verified_at")},
@@ -110,9 +118,10 @@ def account_routes(accounts: Any, settings: Settings, gateway: Gateway, mailer: 
             p.require("owner", "delete the workspace")
             if str(b.get("confirm", "")).strip() != p.workspace["name"]:
                 raise ValidationError("Type the workspace's name exactly to confirm deleting it.")
+            out = accounts.delete_workspace(p.workspace_id)
             accounts.audit("workspace.deleted", actor=p.actor, user_id=p.user["id"], target=p.workspace["name"],
                            detail={"workspace_id": p.workspace_id}, ip=client_ip(request))
-            return _json(accounts.delete_workspace(p.workspace_id))
+            return _json(out)
         ws = accounts.get_workspace(p.workspace_id)
         store = accounts.memory_for(p.workspace_id)
         projects = store.list_projects()
@@ -178,7 +187,7 @@ def account_routes(accounts: Any, settings: Settings, gateway: Gateway, mailer: 
                 p.workspace_id, str(b.get("name", "")), role=str(b.get("role", "editor")),
                 scopes=b.get("scopes") if isinstance(b.get("scopes"), list) else None,
                 default_project=str(b.get("default_project") or "") or None, created_by=p.user["id"],
-                expires_in_days=int(days) if days else None)
+                expires_in_days=int(days) if str(days or "").isdigit() else None)
             audit(request, "key.created", row["name"], role=row["role"], scopes=row["scopes"])
             return _json({"key": row, "secret": secret}, 201)
         return _json({"keys": accounts.api_keys(p.workspace_id)})
@@ -228,10 +237,10 @@ def account_routes(accounts: Any, settings: Settings, gateway: Gateway, mailer: 
     # ------------------------------------------------- usage, receipts, audit
 
     def usage(request: Request, b: dict[str, Any]) -> Response:
-        return _json(accounts.usage_summary(current().workspace_id, int(request.query_params.get("days", 30))))
+        return _json(accounts.usage_summary(current().workspace_id, _int(request, "days", 30)))
 
     def receipts(request: Request, b: dict[str, Any]) -> Response:
-        return _json({"receipts": accounts.receipts(current().workspace_id, int(request.query_params.get("limit", 50)),
+        return _json({"receipts": accounts.receipts(current().workspace_id, _int(request, "limit", 50),
                                                     request.query_params.get("project") or None)})
 
     def receipt(request: Request, b: dict[str, Any]) -> Response:
@@ -254,7 +263,7 @@ def account_routes(accounts: Any, settings: Settings, gateway: Gateway, mailer: 
     def audit_log(request: Request, b: dict[str, Any]) -> Response:
         p = current()
         p.require("admin", "read the audit log")
-        return _json({"audit": accounts.audit_log(p.workspace_id, int(request.query_params.get("limit", 100)))})
+        return _json({"audit": accounts.audit_log(p.workspace_id, _int(request, "limit", 100))})
 
     def export(request: Request, b: dict[str, Any]) -> Response:
         p = current()
@@ -294,7 +303,7 @@ def account_routes(accounts: Any, settings: Settings, gateway: Gateway, mailer: 
             "x-nexus-project": b.get("project"), "x-nexus-context": b.get("context") or "all",
             "x-nexus-provider": b.get("provider"), "x-nexus-refresh": "1"}.items() if v}
         key = {"id": f"app:{p.user['id']}", "name": "playground", "workspace_id": p.workspace_id,
-               "default_project": None, "scopes": ["gateway"]}
+               "default_project": None, "scopes": ["gateway"], "role": p.role}
         try:
             call = await run_in_threadpool(lambda: gateway.prepare(key, False, wire, body, headers, actor=p.actor))
             status, data, ours = await gateway.complete(call)

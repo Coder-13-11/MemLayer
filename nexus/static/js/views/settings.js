@@ -291,7 +291,11 @@ const PANES = {
       rename,
       admin ? section("Export", null,
         h("p", { class: "section-lede" }, "Everything in this workspace as one JSON file: projects, records with their full history, evidence, relations, original sources and the member list. It is yours to keep or move."),
-        h("a", { class: "btn sm", href: "/api/workspace/export", download: "" }, "Download export")) : null,
+        h("button", { class: "btn sm", type: "button", onclick: async (e) => {
+          e.currentTarget.disabled = true;
+          try { await api.exportWorkspace(); } catch (ex) { toast(ex.message, { error: true }); }
+          e.currentTarget.disabled = false;
+        } }, "Download export")) : null,
       remove ? section("Delete", null, remove) : null];
   },
 

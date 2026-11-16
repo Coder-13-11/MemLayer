@@ -7,7 +7,7 @@ services:
     restart: unless-stopped
     env_file: .env
     environment:
-      NEXUS_DATABASE_URL: postgresql://nexus:${POSTGRES_PASSWORD:-nexus}@db:5432/nexus
+      NEXUS_DATABASE_URL: postgresql://nexus:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@db:5432/nexus
       PORT: "8000"
     ports:
       - "127.0.0.1:8000:8000"
@@ -20,7 +20,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: nexus
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-nexus}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
       POSTGRES_DB: nexus
     volumes:
       - nexus-db:/var/lib/postgresql/data

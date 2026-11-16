@@ -39,6 +39,7 @@ from .store import MemoryStore, new_id, now
 from .tenancy import TenancyMixin, role_at_least
 
 CONTROL_SCHEMA = os.environ.get("NEXUS_CONTROL_SCHEMA", "nexus_control")  # Postgres schema for these tables
+LEGACY_CONTROL_SCHEMA = "memlayer_accounts"
 MAX_OPEN_STORES = 256
 
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
@@ -85,10 +86,19 @@ class AccountStore(TenancyMixin, KeysMixin, MeteringMixin):
         if is_pg_url(self.location):
             self.dialect = "pg"
             self.data_dir = None
-            self.conn = PgConnection(self.location, CONTROL_SCHEMA, schema_sql=None)
+            schema = CONTROL_SCHEMA
+            probe = PgConnection(self.location, "public", schema_sql=None)
+            existing = {r["schema_name"] for r in probe.execute(
+                "SELECT schema_name FROM information_schema.schemata WHERE schema_name IN (?, ?)",
+                (CONTROL_SCHEMA, LEGACY_CONTROL_SCHEMA))}
+            if LEGACY_CONTROL_SCHEMA in existing and CONTROL_SCHEMA not in existing:
+                # A database created by MemLayer 0.1: upgrade its accounts in place instead of starting empty.
+                schema = LEGACY_CONTROL_SCHEMA
+            self.control_schema = schema
+            self.conn = PgConnection(self.location, schema, schema_sql=None)
             self._lock = self.conn.lock
             with self._lock:
-                self.conn.execute(f'CREATE SCHEMA IF NOT EXISTS "{CONTROL_SCHEMA}"')
+                self.conn.execute(f'CREATE SCHEMA IF NOT EXISTS "{schema}"')
         else:
             self.dialect = "sqlite"
             self.data_dir = Path(location).expanduser()
@@ -347,9 +357,9 @@ class AccountStore(TenancyMixin, KeysMixin, MeteringMixin):
         """Delete the code and return its grant id; None if it was already used."""
         with self._tx() as c:
             row = c.execute("SELECT grant_id FROM auth_codes WHERE code_hash = ?", (digest(code),)).fetchone()
-            if not row:
+            # The delete decides who wins: with several server instances, only one of them removes the row.
+            if not row or c.execute("DELETE FROM auth_codes WHERE code_hash = ?", (digest(code),)).rowcount != 1:
                 return None
-            c.execute("DELETE FROM auth_codes WHERE code_hash = ?", (digest(code),))
             return row["grant_id"]
 
     def issue_tokens(self, grant_id: str) -> dict[str, Any]:
@@ -366,7 +376,8 @@ class AccountStore(TenancyMixin, KeysMixin, MeteringMixin):
         with self._tx() as c:
             row = c.execute("SELECT grant_id FROM tokens WHERE token_hash = ? AND kind = 'refresh'",
                             (digest(refresh),)).fetchone()
-            if not row:
+            if not row or c.execute("DELETE FROM tokens WHERE token_hash = ? AND kind = 'refresh'",
+                                    (digest(refresh),)).rowcount != 1:
                 return None
             c.execute("DELETE FROM tokens WHERE grant_id = ?", (row["grant_id"],))
             return row["grant_id"]

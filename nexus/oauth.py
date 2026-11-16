@@ -20,6 +20,8 @@ from mcp.server.auth.provider import (
     TokenError,
 )
 from mcp.shared.auth import OAuthClientInformationFull, OAuthToken
+from urllib.parse import urlparse
+
 from pydantic import AnyUrl
 
 from .accounts import AccountStore
@@ -45,6 +47,9 @@ class NexusOAuthProvider:
     # ------------------------------------------------------------ authorize
 
     async def authorize(self, client: OAuthClientInformationFull, params: AuthorizationParams) -> str:
+        target = urlparse(str(params.redirect_uri))
+        if target.username or target.password or target.scheme in ("javascript", "data", "vbscript", "file", "blob"):
+            raise AuthorizeError("invalid_request", "This redirect address is not allowed.")
         resource = (params.resource or self.resource).rstrip("/")
         if resource != self.resource:
             raise AuthorizeError("invalid_request", f"This server only issues tokens for {self.resource}")

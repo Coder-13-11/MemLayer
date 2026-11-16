@@ -193,7 +193,6 @@ function workspaceSwitcher() {
       button.setAttribute("aria-expanded", String(!menu.hidden));
     } },
     h("span", { class: "label" }, me.workspace.name), icon("down"));
-  document.addEventListener("click", () => { menu.hidden = true; button.setAttribute("aria-expanded", "false"); }, { once: true });
   return h("div", { class: "ws-switch" }, button, menu);
 }
 
@@ -365,6 +364,16 @@ document.addEventListener("keydown", (e) => {
   }
 });
 window.addEventListener("hashchange", route);
+document.addEventListener("click", () => {  // an outside click closes the workspace menu
+  const menu = document.querySelector(".ws-menu");
+  if (menu && !menu.hidden) {
+    menu.hidden = true;
+    document.querySelector(".ws-button")?.setAttribute("aria-expanded", "false");
+  }
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") document.querySelector(".ws-menu")?.setAttribute("hidden", "");
+});
 $("view").addEventListener("click", () => $("app").classList.remove("nav-open"));
 // Model chips and other theme-derived colours follow an OS light/dark switch while the page is open.
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {

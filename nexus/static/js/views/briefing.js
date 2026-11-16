@@ -47,7 +47,7 @@ export async function render(ctx) {
     h("label", { class: "inline" }, "Include",
       h("select", { class: "select", onchange: (e) => { state.policy = e.target.value; load(); } },
         h("option", { value: "all" }, "Every record, labelled"),
-        h("option", { value: "confirmed" }, "Only confirmed or evidenced records"))));
+        h("option", { value: "confirmed" }, "Only records a person confirmed"))));
 
   // ---- plan check
   const results = h("div", { class: "check-results", "aria-live": "polite" });

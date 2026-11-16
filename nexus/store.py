@@ -362,6 +362,11 @@ class MemoryStore:
         content = m.require_text(content, "content", m.MAX_CONTENT, allow_empty=True)
         m.require_choice(verification, m.VERIFICATION, "verification")
         imp = m.importance_value(importance)
+        if not isinstance(tags, (list, tuple)) or not isinstance(evidence, (list, tuple)) \
+                or not isinstance(relations, (list, tuple)):
+            raise ValidationError("tags, evidence and relations must be lists")
+        if not all(isinstance(x, Mapping) for x in (*evidence, *relations)):
+            raise ValidationError("each evidence and relation item must be an object")
         tags = [m.require_text(t, "tag", 60) for t in tags]
         evidence, relations = list(evidence), list(relations)
         if verification == "evidence_supported" and not evidence:
@@ -434,6 +439,9 @@ class MemoryStore:
         ``False`` withdraws a confirmation. Left as ``None``, a change to the wording (title, content, subject
         or value) clears any earlier confirmation, because what was vouched for no longer exists."""
         reason = m.require_text(reason, "reason", 2000)
+        if not isinstance(add_evidence, (list, tuple)) or not isinstance(add_relations, (list, tuple)) \
+                or not all(isinstance(x, Mapping) for x in (*add_evidence, *add_relations)):
+            raise ValidationError("add_evidence and add_relations must be lists of objects")
         add_evidence, add_relations = list(add_evidence), list(add_relations)
         changes: dict[str, Any] = {}
         if title is not None:
@@ -573,6 +581,7 @@ class MemoryStore:
         limit = max(1, min(int(limit), 100))
         kinds = [m.require_choice(k, m.RECORD_KINDS, "kind") for k in kinds or []]
         statuses = [m.require_choice(s, m.STATUSES, "status") for s in statuses or []]
+        query = query.replace("\x00", " ") if isinstance(query, str) else ""
         match = fts_query(query or "")
         pg_match = tsquery_terms(query or "", _STOPWORDS)
         with self._read() as c:

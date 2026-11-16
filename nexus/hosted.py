@@ -196,6 +196,29 @@ class PerRequestSessions:
             await manager.handle_request(scope, receive, send)
 
 
+BODY_LIMIT = 2 * 1024 * 1024          # JSON APIs, forms and MCP calls
+GATEWAY_BODY = 12 * 1024 * 1024       # model requests can carry long conversations and images
+
+
+class BodyTooLarge(Exception):
+    pass
+
+
+def bounded(receive: Receive, limit: int) -> Receive:
+    """Wrap ``receive`` so a body sent without a length (chunked) still cannot exceed ``limit`` bytes."""
+    seen = 0
+
+    async def inner() -> dict[str, Any]:
+        nonlocal seen
+        message = await receive()
+        if message["type"] == "http.request":
+            seen += len(message.get("body", b""))
+            if seen > limit:
+                raise BodyTooLarge()
+        return message
+    return inner
+
+
 class Dispatcher:
     """Routes by path family and establishes who is asking before anything else runs."""
 
@@ -203,17 +226,33 @@ class Dispatcher:
                  accounts: AccountStore, settings: Settings):
         self.site, self.app_api, self.key_api = site, app_api, key_api
         self.gateway, self.accounts, self.settings = gateway, accounts, settings
+        self.register_limiter = RateLimiter(limit=30, window=3600)
         self.key_limiter = gateway.limiter  # one count per key across the REST API and the gateway
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] != "http":
             return await self.site(scope, receive, send)
         path = scope.get("path", "")
-        if path.startswith("/v1/"):
-            return await self.with_key(scope, receive, send, path)
-        if path in ("/app", "/app/") or path.startswith("/api/"):
-            return await self.with_session(scope, receive, send, path)
-        await self.site(scope, receive, send)
+        if scope["method"] in WRITES:
+            # Refuse oversized bodies before reading them, and bound what a chunked upload can send.
+            limit = GATEWAY_BODY if path in GATEWAY_PATHS else BODY_LIMIT
+            declared = dict(scope["headers"]).get(b"content-length", b"")
+            if declared.isdigit() and int(declared) > limit:
+                return await JSONResponse({"error": "The request body is too large."}, status_code=413)(scope, receive, send)
+            receive = bounded(receive, limit)
+            if path == "/register":  # anyone may register an OAuth client; not without limit
+                ip = client_ip(Request(scope))
+                if self.register_limiter.blocked(f"ip:{ip}"):
+                    return await JSONResponse({"error": "too_many_requests"}, status_code=429)(scope, receive, send)
+                self.register_limiter.fail(f"ip:{ip}")
+        try:
+            if path.startswith("/v1/"):
+                return await self.with_key(scope, receive, send, path)
+            if path in ("/app", "/app/") or path.startswith("/api/"):
+                return await self.with_session(scope, receive, send, path)
+            await self.site(scope, receive, send)
+        except BodyTooLarge:
+            await JSONResponse({"error": "The request body is too large."}, status_code=413)(scope, receive, send)
 
     # A person in a browser ---------------------------------------------------------------
 
@@ -410,7 +449,7 @@ def create_hosted_app(location: str, public_url: str, *, signup_code: str | None
     memory_app = create_memory_api(prefix="/api", **hooks)
     key_api = create_memory_api(prefix="/v1", **hooks)
 
-    async def key_receipt(request: Request) -> Response:
+    def key_receipt(request: Request) -> Response:  # a plain function: Starlette runs it in a worker thread
         return JSONResponse(accounts.get_receipt(current().workspace_id, request.path_params["rid"]))
 
     key_api.router.routes.insert(0, Route("/v1/receipts/{rid}", key_receipt))
@@ -422,14 +461,19 @@ def create_hosted_app(location: str, public_url: str, *, signup_code: str | None
     async def api_error(request: Request, exc: Exception) -> Response:
         status = (404 if isinstance(exc, NotFound) else 403 if isinstance(exc, PermissionDenied)
                   else 402 if isinstance(exc, LimitReached) else 400)
-        return JSONResponse({"error": str(exc)}, status_code=status)
+        if isinstance(exc, (TypeError, AttributeError)):  # a field of the wrong type, not a server fault
+            return JSONResponse({"error": "A field in the request has the wrong type."}, status_code=400)
+        body = {"error": str(exc)}
+        if status == 402:
+            body["code"] = "limit_reached"
+        return JSONResponse(body, status_code=status)
 
     app_api = Starlette(
         routes=[Route("/app", app_shell),
                 *account_routes(accounts, settings, gateway, mailer, client_ip, load_demo),
                 *memory_app.router.routes],
         exception_handlers={NotFound: api_error, PermissionDenied: api_error, LimitReached: api_error,
-                            ValidationError: api_error})
+                            ValidationError: api_error, TypeError: api_error, AttributeError: api_error})
 
     # ------------------------------------------------------------ public pages
 
@@ -506,6 +550,8 @@ def create_hosted_app(location: str, public_url: str, *, signup_code: str | None
             data = await request.json() if is_json else dict(await request.form())
         except ValueError:
             return JSONResponse({"error": "Send the form again."}, status_code=400)
+        if not isinstance(data, dict):
+            return JSONResponse({"error": "Send the form again."}, status_code=400)
         ip = client_ip(request)
         if beta_limiter.blocked(f"ip:{ip}"):
             return JSONResponse({"error": "Too many requests from this network. Try again in an hour."}, status_code=429)
@@ -576,7 +622,7 @@ def create_hosted_app(location: str, public_url: str, *, signup_code: str | None
             return await signup_post(request, form)
         email, next_ = str(form.get("email", "")).strip(), safe_next(str(form.get("next", "")))
         ip = client_ip(request)
-        keys = (f"ip:{ip}", f"email:{email.lower()}")
+        keys = (f"ip:{ip}", f"pair:{ip}:{email.lower()}")
 
         def again(message: str, status: int = 400) -> Response:
             return HTMLResponse(pages.login_page(error=message, email=email, next_=next_, signup_open=signup_open),
@@ -758,7 +804,7 @@ def create_hosted_app(location: str, public_url: str, *, signup_code: str | None
         ip = client_ip(request)
         if not user:
             email = str(form.get("email", "")).strip()
-            keys = (f"ip:{ip}", f"email:{email.lower()}")
+            keys = (f"ip:{ip}", f"pair:{ip}:{email.lower()}")
             if limiter.blocked(*keys):
                 return page(req, mode, "Too many attempts. Wait 15 minutes and try again.", email, 429)
             if mode == "signup":

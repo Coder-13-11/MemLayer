@@ -34,7 +34,7 @@ x-nexus-project: Checkout rebuild"</code></pre>
 <thead><tr><th>Header</th><th>Meaning</th></tr></thead>
 <tbody>
 <tr><td><code>x-nexus-project</code></td><td>Project name or id. Without it, the key's default project is used. With neither, nothing is added and the request is only metered.</td></tr>
-<tr><td><code>x-nexus-context</code></td><td><code>all</code> (default), <code>confirmed</code> (only confirmed or evidence-supported entries) or <code>off</code>.</td></tr>
+<tr><td><code>x-nexus-context</code></td><td><code>all</code> (default), <code>confirmed</code> (only entries a person confirmed) or <code>off</code>.</td></tr>
 <tr><td><code>x-nexus-context-budget</code></td><td>Size limit for the briefing in tokens. Default 1200, from 300 to 6000.</td></tr>
 <tr><td><code>x-nexus-provider</code></td><td>Force <code>openai</code>, <code>anthropic</code>, <code>google</code>, <code>openai_compatible</code> or <code>mock</code>. Otherwise chosen from the endpoint and the model name.</td></tr>
 <tr><td><code>x-nexus-refresh: 1</code></td><td>Rebuild the briefing now instead of waiting for it to expire.</td></tr>

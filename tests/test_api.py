@@ -145,3 +145,46 @@ def test_cli_brief_and_check_use_the_same_api(api, capsys, monkeypatch):
     with pytest.raises(SystemExit) as stop:
         main(["brief", PROJECT])
     assert stop.value.code == 1 and "API key" in capsys.readouterr().err
+
+
+@pytest.mark.skipif(not __import__("os").environ.get("NEXUS_TEST_PG_URL"), reason="needs NEXUS_TEST_PG_URL")
+def test_the_whole_journey_runs_on_postgres(tmp_path):
+    """Sign up, load the example, use a key, check a plan, go through the gateway and read the receipt, with
+    Postgres holding both the control plane and the workspace's record."""
+    import os
+    import uuid
+
+    from tests.conftest import start_nexus
+
+    base, accounts, stop = start_nexus(tmp_path, location=os.environ["NEXUS_TEST_PG_URL"])
+    email = f"pg-{uuid.uuid4().hex[:8]}@example.com"
+    try:
+        owner = sign_up(base, email, workspace=f"PG {uuid.uuid4().hex[:6]}")
+        assert owner.post("/api/workspace/demo", json={}).status_code == 201
+        project = owner.get("/api/projects").json()["projects"][0]
+        assert project["gap_counts"]["possible_contradiction"] == 1
+        key = owner.post("/api/workspace/keys", json={"name": "pg", "role": "editor"}).json()["secret"]
+        with httpx.Client(base_url=base, headers={"Authorization": f"Bearer {key}"}, timeout=20) as api:
+            check = api.post(f"/v1/projects/{project['id']}/check", json={"statements": ["Use Jest for the unit tests"]})
+            assert check.json()["verdict"] == "resembles_replaced"
+            assert api.get("/v1/search", params={"q": "Vitest"}).json()["results"]
+            reply = api.post("/v1/chat/completions", headers={"x-nexus-project": project["id"]},
+                             json={"model": "mock-1", "messages": [{"role": "user", "content": "hi"}]})
+            assert reply.status_code == 200 and reply.headers["x-nexus-receipt"].startswith("rcp_")
+            receipt = api.get(f"/v1/receipts/{reply.headers['x-nexus-receipt']}").json()
+            assert len(receipt["record_refs"]) == 18
+        rid = owner.get(f"/api/projects/{project['id']}/records").json()["records"][0]["id"]
+        assert owner.patch(f"/api/records/{rid}", json={"confirm": True}).json()["confirmed_by"] == email
+        assert owner.get("/api/workspace/usage").json()["month"]["gateway_requests"] == 1
+        assert owner.get("/readyz").json()["ok"]
+        ws = owner.get("/api/me").json()["workspace"]
+        assert owner.request("DELETE", "/api/workspace", json={"confirm": ws["name"]}).status_code == 200
+        gone = accounts.conn.execute("SELECT 1 FROM information_schema.schemata WHERE schema_name = ?",
+                                     (f"w_{ws['id'][4:]}",)).fetchone()
+        assert gone is None  # deleting the workspace dropped its schema
+        owner.close()
+    finally:
+        user = accounts.find_user(email)
+        if user:
+            accounts.delete_user(user["id"])
+        stop()

@@ -38,7 +38,10 @@ class KeysMixin:
             raise ValidationError("Give the key a name of 1 to 80 characters, such as where it will be used.")
         if role not in KEY_ROLES:
             raise ValidationError(f"role must be one of {', '.join(KEY_ROLES)}")
-        scopes = list(dict.fromkeys(scopes or KEY_SCOPES))
+        scopes = scopes or list(KEY_SCOPES)
+        if not all(isinstance(s, str) for s in scopes):
+            raise ValidationError(f"scopes must be chosen from {', '.join(KEY_SCOPES)}")
+        scopes = list(dict.fromkeys(scopes))
         if not scopes or any(s not in KEY_SCOPES for s in scopes):
             raise ValidationError(f"scopes must be chosen from {', '.join(KEY_SCOPES)}")
         if expires_in_days is not None and not 1 <= int(expires_in_days) <= 3650:

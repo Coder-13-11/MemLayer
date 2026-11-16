@@ -229,23 +229,23 @@
   "full_export_tokens": 7360,
   "structured_context_tokens": 3153,
   "briefing_600": {
-   "tokens": 547,
+   "tokens": 558,
    "records": 10,
    "left_out": 12
   },
   "briefing_1200": {
-   "tokens": 1004,
+   "tokens": 1029,
    "records": 18,
    "left_out": 0
   },
   "briefing_2400": {
-   "tokens": 1004,
+   "tokens": 1029,
    "records": 18,
    "left_out": 0
   },
   "briefing_confirmed_only": {
-   "tokens": 650,
-   "records": 11
+   "tokens": 539,
+   "records": 7
   },
   "records_in_project": 18,
   "tokens_estimated_as": "characters divided by four"
@@ -269,46 +269,46 @@
  "speed": {
   "200_records": {
    "snapshot": {
-    "median_ms": 1.73,
-    "p95_ms": 1.84
+    "median_ms": 1.7,
+    "p95_ms": 1.73
    },
    "briefing": {
-    "median_ms": 1.7,
-    "p95_ms": 1.83
+    "median_ms": 2.56,
+    "p95_ms": 2.73
    },
    "review": {
     "median_ms": 0.39,
-    "p95_ms": 0.39
+    "p95_ms": 0.4
    },
    "plan_check_3_steps": {
-    "median_ms": 2.89,
-    "p95_ms": 3.02
+    "median_ms": 2.93,
+    "p95_ms": 3.09
    },
    "search": {
     "median_ms": 0.66,
-    "p95_ms": 0.7
+    "p95_ms": 0.74
    }
   },
   "2000_records": {
    "snapshot": {
-    "median_ms": 16.88,
-    "p95_ms": 17.46
+    "median_ms": 16.93,
+    "p95_ms": 17.16
    },
    "briefing": {
-    "median_ms": 17.73,
-    "p95_ms": 18.42
+    "median_ms": 26.71,
+    "p95_ms": 27.3
    },
    "review": {
-    "median_ms": 4.44,
-    "p95_ms": 4.69
+    "median_ms": 4.49,
+    "p95_ms": 4.78
    },
    "plan_check_3_steps": {
-    "median_ms": 30.62,
-    "p95_ms": 30.96
+    "median_ms": 31.2,
+    "p95_ms": 31.56
    },
    "search": {
-    "median_ms": 1.53,
-    "p95_ms": 1.64
+    "median_ms": 1.56,
+    "p95_ms": 1.73
    }
   }
  },
