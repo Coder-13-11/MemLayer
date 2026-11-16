@@ -21,9 +21,9 @@ const TABS = [
   { id: "records", label: "Records", icon: "records", view: records },
   { id: "gaps", label: "Review", icon: "gaps", view: gaps },
   { id: "briefing", label: "Briefing", icon: "sources", view: briefing },
-  { id: "graph", label: "Graph", icon: "graph", view: graph },
-  { id: "sources", label: "Sources", icon: "sources", view: sources },
-  { id: "activity", label: "Activity", icon: "activity", view: activity },
+  { id: "graph", label: "Graph", icon: "graph", view: graph, more: true },
+  { id: "sources", label: "Sources", icon: "sources", view: sources, more: true },
+  { id: "activity", label: "Activity", icon: "activity", view: activity, more: true },
 ];
 
 const PAGES = {
@@ -122,7 +122,9 @@ async function renderView(r, { keepScroll = false } = {}) {
       h("strong", {}, "Project not found"), "It may have been deleted. ", h("a", { href: "#/" }, "Back to all projects"))));
     return;
   }
-  if (!keepScroll) clear(viewEl, h("div", { class: "view-inner" }, h("div", { class: "skeleton" }, "Loading…")));
+  if (!keepScroll) clear(viewEl, h("div", { class: "view-inner calm", "aria-busy": "true", "aria-label": "Loading" },
+    h("div", { class: "skel title" }), h("div", { class: "skel line" }), h("div", { class: "skel line short" }),
+    h("div", { class: "skel block" })));
   try {
     const out = await mod.render(ctx);
     if (seq !== state.renderSeq) return;
@@ -156,6 +158,24 @@ function isDark() {
   return theme === "dark" || (!theme && matchMedia("(prefers-color-scheme: dark)").matches);
 }
 
+// Creating a workspace happens in the menu itself: a name and Enter.
+function newWorkspaceForm() {
+  const input = h("input", { class: "input", name: "name", placeholder: "New workspace name", maxlength: 80, required: true,
+    "aria-label": "New workspace name" });
+  const form = h("form", { class: "ws-new", onclick: (e) => e.stopPropagation() }, input,
+    h("button", { class: "btn primary sm", type: "submit" }, "Create"));
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    try {
+      const ws = await api.createWorkspace(input.value.trim());
+      setWorkspace(ws.slug);
+      location.hash = "#/";
+      location.reload();
+    } catch (ex) { toast(ex.message, { error: true }); }
+  });
+  return form;
+}
+
 function workspaceSwitcher() {
   const me = state.me;
   if (!me) return null;
@@ -165,16 +185,7 @@ function workspaceSwitcher() {
       "aria-checked": w.id === me.workspace.id ? "true" : "false",
       onclick: () => { setWorkspace(w.slug); location.hash = "#/"; location.reload(); },
     }, h("span", { class: "label" }, w.name), h("span", { class: "meta" }, w.role))),
-    h("button", { class: "ws-option new", type: "button", role: "menuitem", onclick: async () => {
-      const name = prompt("Name the new workspace");
-      if (!name?.trim()) return;
-      try {
-        const ws = await api.createWorkspace(name.trim());
-        setWorkspace(ws.slug);
-        location.hash = "#/";
-        location.reload();
-      } catch (e) { toast(e.message, { error: true }); }
-    } }, icon("plus"), "New workspace"));
+    newWorkspaceForm());
   const button = h("button", { class: "ws-button", type: "button", "aria-haspopup": "menu", "aria-expanded": "false",
     onclick: (e) => {
       e.stopPropagation();
@@ -201,8 +212,8 @@ function renderSidebar() {
     workspaceSwitcher(),
     h("button", { class: "search-trigger", onclick: () => openPalette(ctxFor(state.route)) },
       icon("search"), h("span", {}, "Search the record"), h("kbd", {}, "⌘K")),
-    h("a", { class: `nav-item ${r.name === "home" ? "active" : ""}`, href: "#/" }, icon("home"), h("span", { class: "label" }, "All projects")),
-    me ? [page("receipts", "Receipts", "sources"), page("playground", "Playground", "sparkle")] : null,
+    h("a", { class: `nav-item ${r.name === "home" ? "active" : ""}`, href: "#/" }, icon("home"), h("span", { class: "label" }, "Home")),
+    me ? page("receipts", "Receipts", "sources") : null,
     h("div", { class: "nav-section" }, h("span", {}, "Projects"),
       ctxFor(r).canWrite ? h("button", { class: "icon-btn", title: "New project", "aria-label": "New project",
         onclick: () => navigate("/?new=1") }, icon("plus")) : null),
@@ -238,6 +249,19 @@ function renderSidebar() {
 }
 
 // ------------------------------------------------------------------- topbar
+// The views most people rarely need sit behind one control, so the bar stays four items wide.
+function moreMenu(r) {
+  const extra = TABS.filter((t) => t.more);
+  const current = extra.find((t) => t.id === r.tab);
+  const menu = h("details", { class: `more-menu ${current ? "active" : ""}` },
+    h("summary", { class: "tab" }, current ? current.label : "More", icon("down")),
+    h("div", { class: "more-list" }, extra.map((t) => h("a", {
+      href: `#/p/${encodeURIComponent(r.pid)}/${t.id}`, "aria-current": r.tab === t.id ? "page" : null,
+    }, icon(t.icon), t.label))));
+  menu.addEventListener("focusout", (e) => { if (!menu.contains(e.relatedTarget)) menu.open = false; });
+  return menu;
+}
+
 function menuButton() {
   return h("button", { class: "icon-btn menu-btn", type: "button", "aria-label": "Open navigation",
     onclick: () => $("app").classList.toggle("nav-open") }, icon("menu"));
@@ -250,7 +274,7 @@ function renderTopbar() {
   if (r.name !== "project") {
     clear(top, menuButton(), h("div", { class: "crumbs" },
       state.me ? [h("span", {}, state.me.workspace.name), h("span", {}, "/")] : null,
-      h("span", { class: "here" }, PAGES[r.name]?.title || "All projects")),
+      h("span", { class: "here" }, PAGES[r.name]?.title || "Home")),
       h("div", { class: "actions" },
         h("button", { class: "btn", onclick: () => openPalette(ctxFor(r)) }, icon("search"), "Search")));
     return;
@@ -261,10 +285,12 @@ function renderTopbar() {
   clear(top, menuButton(),
     h("div", { class: "crumbs" }, h("a", { href: "#/" }, "Projects"), h("span", {}, "/"),
       h("span", { class: "here" }, p ? p.name : "…")),
-    h("nav", { class: "tabs", "aria-label": "Project views" }, TABS.map((t) => h("a", {
-      class: `tab ${r.tab === t.id ? "active" : ""}`, href: `#/p/${encodeURIComponent(r.pid)}/${t.id}`,
-      "aria-current": r.tab === t.id ? "page" : null,
-    }, t.label, counts[t.id] ? h("span", { class: "count" }, counts[t.id]) : null))),
+    h("nav", { class: "tabs", "aria-label": "Project views" },
+      TABS.filter((t) => !t.more).map((t) => h("a", {
+        class: `tab ${r.tab === t.id ? "active" : ""}`, href: `#/p/${encodeURIComponent(r.pid)}/${t.id}`,
+        "aria-current": r.tab === t.id ? "page" : null,
+      }, t.label, t.id === "gaps" && counts.gaps ? h("span", { class: "count" }, counts.gaps) : null)),
+      moreMenu(r)),
     ctxFor(r).canWrite ? h("div", { class: "actions" },
       h("button", { class: "btn", onclick: () => navigate(`/p/${encodeURIComponent(r.pid)}/sources?import=1`) },
         icon("import"), h("span", { class: "lbl" }, "Import")),

@@ -8,68 +8,66 @@ web
 
 ## Stack
 
-Python + plain JS: Starlette (already a dependency of the MCP SDK) serves a JSON API and a no-build vanilla-JS
-frontend from the same process that opens the shared SQLite store. No Node, no bundler.
+Python and plain JavaScript. Starlette serves the JSON APIs, the MCP endpoint, the model gateway, the public
+site and a no-build ES-module app from one process. Storage is SQLite files or Postgres. No Node, no bundler.
 
 ## Users
 
-Individuals: researchers, analysts and builders who run long research projects across several AI assistants
-(ChatGPT, Claude, Gemini, Perplexity) and are tired of re-explaining earlier findings to each new model. Each person
-has their own memory; shared team projects are out of scope for this version. The original owner also runs the
-product locally on their own Mac.
+The lead of a 5 to 30 person engineering team that runs two or more AI coding tools (Claude Code, Cursor, Codex,
+ChatGPT), and the engineers on that team. They are at a desk, in daylight, between code review and standup.
+They are tired of agents re-litigating settled decisions and of each tool believing something different.
+A single person can also run it locally for themselves.
 
 ## Product Purpose
 
-A single, model-independent memory for research projects. AI clients read and write it through MCP, and the owner
-uses the web dashboard to see what every model has contributed, check and correct it, and find what is still
-missing. Success: the owner opens a new AI session and the model already knows what was investigated, what was
-verified, and what remains open, and the owner can confirm all of this at a glance in the dashboard.
+One record of what a project has decided, read by every person and AI tool that works on it. Success: an agent
+about to repeat a mistake the team already fixed is told so before it acts, and when an agent does something
+surprising, the lead can see exactly what it was told.
 
 ## Positioning
 
-The memory belongs to the user, not to an AI provider, and it is evidence-aware. Every claim carries its origin
-model, verbatim source, attached evidence and verification status. Superseded knowledge is kept as history, not
-overwritten. Gap detection always cites the records it is based on.
+"Shared AI memory" is crowded. NEXUS is the ledger, not the memory: decisions, assumptions and findings with
+their author (person or model), evidence, confirmation by a person, and history. Three things no general memory
+layer or vendor memory offers together: a trust tier only people can set, a deterministic check of plans against
+replaced decisions, and a receipt of what each model was handed. See docs/research.md.
 
 ## Operating Context
 
-- Two modes. Local: dashboard on localhost, one SQLite file (`~/.nexus/memory.db`), stdio MCP for Claude Code.
-  Hosted (`nexus hosted`): one public HTTPS MCP address with OAuth 2.1 sign-in, one SQLite file per account,
-  a public landing page and a sign-in/consent page.
-- The hosted service is in private beta: the landing page collects invite requests; sign-up can require an
-  invite code. Hosted accounts have no web dashboard yet (planned).
-- ChatGPT (Developer mode, paid plans), Claude (custom connectors), Gemini and Perplexity (where their plans offer
-  custom connectors) connect to the hosted address. Changes made by AI clients appear in an open dashboard live.
-- Core objects: projects, sources (verbatim text), records (objective, finding, decision, assumption, hypothesis,
-  evidence, question, task, note), evidence, typed relations, version history.
+- Hosted mode (`nexus hosted`): accounts, workspaces with four roles, invitations, API keys, encrypted provider
+  keys, usage limits, audit log. Ways in: MCP with OAuth, a REST API, a pass-through gateway, a CLI.
+- Local mode (`nexus web`, `nexus serve`): one SQLite file, no accounts.
+- Core objects: workspaces, projects, sources (verbatim text), records (objective, finding, decision,
+  assumption, hypothesis, evidence, question, task, note), evidence, typed relations, version history,
+  receipts.
 
 ## Capabilities and Constraints
 
-- Statuses: unverified, evidence_supported, challenged, contradicted, superseded, resolved, retracted.
-  `evidence_supported` requires at least one evidence item.
-- Gap analysis is deterministic (rules over relations, subject/value keys, evidence, dependencies). "AI-powered"
-  detection means the user's own MCP-connected AI client reviews a project and records contradictions back into
-  memory via an MCP prompt. No paid API is called by the product.
-- Reads never modify memory. Deletion is a human action only (dashboard or CLI), never exposed over MCP.
-- Imported content is untrusted data and must never be rendered as HTML or followed as instructions.
-- Name is not final: "NEXUS" is a placeholder and the brand must be changeable from one place.
+- Statuses: unverified, evidence_supported, challenged, contradicted, superseded, resolved, retracted. Separately,
+  a record may be confirmed by a person; rewording clears it.
+- The review and the plan check are deterministic. The product calls no AI model itself.
+- AI tools can read, add and correct. They cannot delete or confirm. Everything they write starts unverified.
+- Stored content is untrusted data: never rendered as HTML, never followed as instructions, flattened before it
+  is placed in a briefing.
+- The gateway forwards native wire formats and does not translate, route or store conversations.
+- The name lives in `nexus/brand.py` and can be overridden with `NEXUS_BRAND_NAME`.
 
 ## Brand Commitments
 
-Working name "NEXUS", explicitly provisional and changeable from one place. The user wants it to look like a
-high-end, established, credible startup, interactive and animated. Chosen visual world: "The Journal": the
-product presented like a peer-reviewed paper (white stock, black ink, one journal red for citations and the
-primary action, STIX Two Text and Archivo). The dashboard keeps its Notion-meets-Linear structure inside that world.
+Name: NEXUS. Visual world: the carbon copy. Multipart carbonless forms and till receipts: a bright white
+original, canary, pink, sky and mint copy sheets, carbon-blue ink, red serial numbers and stamps. The app keeps
+the same ink and paper at working density. Documented in DESIGN.md.
 
 ## Evidence on Hand
 
-Synthetic sample project "Environmental AI Research" (`samples/`). No real users, customers, testimonials or metrics
-exist; do not fabricate any. Demonstrations use synthetic data and say so.
+A synthetic example project, "Checkout rebuild (example)" (`nexus/demo.py`), used by the app's first run, the
+landing page, the tests and the benchmarks. No real users, customers, testimonials or outcome metrics exist; do
+not fabricate any. Benchmarks in `benchmarks/` are reproducible and say what they do not show.
 
 ## Product Principles
 
-1. Provenance before polish: a claim is never shown without its status and where it came from.
+1. Provenance before polish: a claim is never shown without who wrote it and how far it was checked.
 2. History is kept, not erased: corrections supersede; deletion is deliberate and human.
-3. Honest about uncertainty: heuristic findings are labelled as possible, not as fact.
-4. Owned: the memory belongs to the user, locally or in their own account file; the product calls no AI model.
+3. Honest about uncertainty: matches found by wording are labelled as such, and "clear" is never approval.
+4. People vouch, models propose: only a person can confirm, and conflicts stay visible until a person settles them.
 5. Model-neutral: no AI provider is privileged in the data or the interface.
+6. Say what it does not do: limits are published next to features.

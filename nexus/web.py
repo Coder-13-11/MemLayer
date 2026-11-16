@@ -200,7 +200,9 @@ def create_app(db_path: str | None = None, store: MemoryStore | None = None, pol
             "record_total": len(snap["records"]),
             "relation_total": len(snap["relations"]),
             "source_total": len(snap["sources"]),
-            "decisions": ctx.get("decisions", []),
+            "confirmed_total": sum(1 for r in recs if r["lifecycle"] == "active" and r.get("confirmed_by")),
+            "decisions": [{**d, "confirmed": bool(snap["records"][d["id"]].get("confirmed_by"))}
+                          for d in ctx.get("decisions", [])],
             "open_questions": ctx.get("open_questions", []),
             "gaps": [_gap_brief(g) for g in gaps["gaps"]],
             "gap_counts": gaps["counts"],

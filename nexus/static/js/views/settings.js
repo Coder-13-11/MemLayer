@@ -33,7 +33,8 @@ export async function render(ctx) {
   const body = h("div", { class: "settings-body" });
   add(el, 
     h("nav", { class: "settings-nav", "aria-label": "Settings" }, SECTIONS.filter((s) => !s.admin || admin).map((s) =>
-      h("a", { href: `#/settings/${s.id}`, class: s.id === tab.id ? "active" : "", "aria-current": s.id === tab.id ? "page" : null }, s.label))),
+      h("a", { href: `#/settings/${s.id}`, class: s.id === tab.id ? "active" : "", "aria-current": s.id === tab.id ? "page" : null }, s.label)),
+      h("a", { href: "#/playground", class: "aside" }, "Try the gateway")),
     body);
   const draw = async () => clear(body, await PANES[tab.id](ctx, me, admin, draw));
   await draw();
