@@ -1,0 +1,44 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "design-system-font",
+        "value": "geist",
+        "createdAt": "2026-11-17T04:48:38.119Z",
+        "reason": "owner's pasted brief names Inter/Geist and JetBrains Mono/Geist Mono for the public site"
+      },
+      {
+        "rule": "design-system-font",
+        "value": "geist mono",
+        "createdAt": "2026-11-17T04:48:38.145Z",
+        "reason": "owner's pasted brief names Inter/Geist and JetBrains Mono/Geist Mono for the public site"
+      },
+      {
+        "rule": "design-system-font",
+        "value": "inter",
+        "createdAt": "2026-11-17T04:48:38.168Z",
+        "reason": "owner's pasted brief names Inter/Geist and JetBrains Mono/Geist Mono for the public site"
+      },
+      {
+        "rule": "design-system-font",
+        "value": "jetbrains mono",
+        "createdAt": "2026-11-17T04:48:38.191Z",
+        "reason": "owner's pasted brief names Inter/Geist and JetBrains Mono/Geist Mono for the public site"
+      },
+      {
+        "rule": "overused-font",
+        "value": "geist",
+        "createdAt": "2026-11-17T04:48:38.215Z",
+        "reason": "owner's pasted brief names Inter/Geist for the public site"
+      },
+      {
+        "rule": "overused-font",
+        "value": "inter",
+        "createdAt": "2026-11-17T04:48:38.239Z",
+        "reason": "owner's pasted brief names Inter/Geist for the public site"
+      }
+    ]
+  }
+}
