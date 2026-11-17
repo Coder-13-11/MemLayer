@@ -63,6 +63,16 @@ typography:
 
 # NEXUS design system
 
+> **Public site, from 0.2.1: "archival technical".** The landing page, documentation and sign-in pages moved to
+> a dark system at the owner's direction: obsidian ground `#090A0F`, ledger cards `#11131C` with `#1E2230`
+> hairlines, text `#F4F5F8`, metadata `#8A90A6`, mint `#10B981` (confirmed), crimson `#F43F5E` (voided), amber
+> `#F59E0B` (disputed), cobalt `#3B82F6` (the one action). A geometric sans (Geist / Inter, falling back to the
+> system sans) for reading and a monospace (Geist Mono / JetBrains Mono, falling back to the system mono) for
+> record numbers, timestamps and commands. Motion is 150 to 300 ms state feedback, a blinking cursor on live
+> text, and scroll reveals that are off without JavaScript or with reduced motion. The tokens live at the top of
+> `nexus/static/site/site.css`. The sections below still describe the signed-in app, which keeps the light
+> carbon-ink system until it is moved across.
+
 ## The world
 
 A decision written once on the top sheet of a multipart form presses through to a copy for every AI tool. A

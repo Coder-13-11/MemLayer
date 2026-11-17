@@ -1,32 +1,40 @@
-// The public site's behaviour: the carbon-copy form, the plan check, the receipt, copy buttons.
-// Everything works without this file; it only adds the demonstrations.
+// The public site's behaviour: live sync in the hero, ledger filters, the plan check, the receipt, tabs,
+// copy buttons and scroll reveals. Everything on the page reads without this file.
 (function () {
   "use strict";
   var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   var $ = function (sel, root) { return (root || document).querySelector(sel); };
   var $$ = function (sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); };
+  document.documentElement.classList.add("js");
 
-  // ------------------------------------------------ write once, every copy gets it
+  // --------------------------------------------- write once, every agent gets it
   var entry = $("[data-entry]");
   var copies = $$("[data-copy]");
+  var consoleEl = $("[data-form]");
   if (entry && copies.length) {
     var timers = [];
-    var press = function (copy, text, delay) {
-      timers.push(setTimeout(function () {
-        var line = $("[data-carbon]", copy);
-        line.textContent = text || " ";
-        copy.classList.add("pressing");
-        setTimeout(function () { copy.classList.remove("pressing"); }, 140);
-      }, delay));
-    };
     var transfer = function () {
       timers.forEach(clearTimeout);
       timers = [];
-      copies.forEach(function (copy, i) { press(copy, entry.value, reduce ? 0 : 110 + i * 120); });
+      if (consoleEl && !reduce) {
+        consoleEl.classList.remove("sending");
+        void consoleEl.offsetWidth;
+        consoleEl.classList.add("sending");
+      }
+      copies.forEach(function (copy, i) {
+        var sync = $("[data-sync]", copy);
+        if (sync) sync.textContent = "syncing";
+        copy.classList.add("pressing");
+        timers.push(setTimeout(function () {
+          $("[data-carbon]", copy).textContent = entry.value;
+          if (sync) sync.textContent = "synced";
+          copy.classList.remove("pressing");
+        }, reduce ? 0 : 160 + i * 110));
+      });
     };
     entry.addEventListener("input", transfer);
 
-    // On arrival the line is typed in once, so the transfer is seen before anything is asked of the visitor.
+    // On arrival the line is typed once, so the sync is seen before anything is asked of the visitor.
     var full = entry.value;
     var touched = false;
     ["pointerdown", "keydown", "focus"].forEach(function (ev) {
@@ -44,10 +52,29 @@
         i += 1;
         entry.value = full.slice(0, i);
         transfer();
-        if (i < full.length) setTimeout(type, 46 + (full[i - 1] === " " ? 60 : 0));
+        if (i < full.length) setTimeout(type, 52 + (full[i - 1] === " " ? 70 : 0));
       };
-      setTimeout(type, 650);
+      setTimeout(type, 700);
     }
+  }
+
+  // ---------------------------------------------------------------- ledger filter
+  var ledger = $("[data-ledger]");
+  if (ledger) {
+    var rows = $$("tr", ledger);
+    var count = $("[data-ledger-count]");
+    $$("[data-filter]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        var want = b.dataset.filter, shown = 0;
+        rows.forEach(function (r) {
+          var on = want === "all" || r.dataset.state === want;
+          r.hidden = !on;
+          shown += on ? 1 : 0;
+        });
+        $$("[data-filter]").forEach(function (x) { x.setAttribute("aria-pressed", String(x === b)); });
+        if (count) count.textContent = shown + " of " + rows.length + " entries";
+      });
+    });
   }
 
   // --------------------------------------------------------------- the plan check
@@ -55,26 +82,29 @@
   if (out) {
     var choices = $$("[data-check]");
     var results = null;
+    var BADGE = { bad: ["BLOCKED", "2", "A CI step can fail on it."], warn: ["WARNING", "0", "Not judged. The agent is told to read these first."],
+      ok: ["PASS", "0", "Nothing matched. That is not confirmation the step is right."] };
     var show = function (n) {
       if (!results || !results[n]) return;
-      var r = results[n];
+      var r = results[n], b = BADGE[r.tone] || BADGE.ok;
       $("[data-check-step]", out).textContent = r.step;
-      $("[data-check-no]", out).textContent = "No. " + String(n + 1).padStart(4, "0");
-      var stamp = $("[data-check-stamp]", out);
-      stamp.textContent = r.stamp;
-      stamp.className = "stamp" + (r.tone === "ok" ? " ok" : r.tone === "warn" ? " warn" : "");
-      void stamp.offsetWidth;  // restart the stamp animation
-      stamp.classList.add("in");
+      var verdict = $("[data-check-verdict]", out);
+      verdict.className = "verdict " + (BADGE[r.tone] ? r.tone : "ok");
+      void verdict.offsetWidth;  // restart the entrance
+      verdict.classList.add("in");
+      $("[data-check-badge]", out).textContent = b[0];
+      $("[data-check-stamp]", out).textContent = r.stamp;
+      $("[data-check-exit]", out).textContent = b[1];
+      $("[data-check-fine]", out).textContent = b[2];
       var dl = $("[data-check-lines]", out);
       dl.textContent = "";
-      r.lines.forEach(function (pair) {
+      (r.lines.length ? r.lines : [["Result", "No entry in the record matches this step."]]).forEach(function (pair) {
         var dt = document.createElement("dt"), dd = document.createElement("dd");
         dt.textContent = pair[0];
         dd.textContent = pair[1];
         dl.appendChild(dt);
         dl.appendChild(dd);
       });
-      $("[data-check-fine]", out).textContent = r.fine;
       choices.forEach(function (c, i) { c.setAttribute("aria-pressed", String(i === n)); });
     };
     choices.forEach(function (c) { c.addEventListener("click", function () { show(Number(c.dataset.check)); }); });
@@ -92,12 +122,34 @@
       var on = toggle.getAttribute("aria-pressed") !== "true";
       toggle.setAttribute("aria-pressed", String(on));
       till.classList.toggle("changed", on);
-      toggle.textContent = on ? "Put it back" : "Change a decision after it was read";
-      $("[data-till-foot]", till).textContent = on
-        ? "1 record changed after this model read it. What it was told is no longer current."
-        : "Every record is still as the model saw it.";
+      $("[data-till-label]", toggle).textContent = on ? "Put it back" : "Simulate: change a decision after it was read";
+      var foot = $("[data-till-foot]", till);
+      foot.lastChild.textContent = on
+        ? "1 entry changed after this model read it. What it was told is no longer current."
+        : "Every entry is still as the model saw it.";
     });
   }
+
+  // ------------------------------------------------------------------------- tabs
+  $$("[data-tabs]").forEach(function (deck) {
+    var tabs = $$("[role=tab]", deck);
+    var pick = function (tab, focus) {
+      tabs.forEach(function (t) {
+        var on = t === tab;
+        t.setAttribute("aria-selected", String(on));
+        t.tabIndex = on ? 0 : -1;
+        document.getElementById(t.getAttribute("aria-controls")).hidden = !on;
+      });
+      if (focus) tab.focus();
+    };
+    tabs.forEach(function (t, i) {
+      t.addEventListener("click", function () { pick(t); });
+      t.addEventListener("keydown", function (e) {
+        if (e.key === "ArrowRight") pick(tabs[(i + 1) % tabs.length], true);
+        if (e.key === "ArrowLeft") pick(tabs[(i + tabs.length - 1) % tabs.length], true);
+      });
+    });
+  });
 
   // ------------------------------------------------------------------ copy buttons
   $$("[data-copy-text]").forEach(function (b) {
@@ -107,4 +159,17 @@
       navigator.clipboard.writeText(b.dataset.copyText).then(function () { done("Copied"); }, function () { done("Select it"); });
     });
   });
+
+  // ---------------------------------------------------------------- scroll reveals
+  var reveals = $$(".reveal");
+  if (reduce || !("IntersectionObserver" in window)) {
+    reveals.forEach(function (el) { el.classList.add("seen"); });
+  } else {
+    var io = new IntersectionObserver(function (items) {
+      items.forEach(function (it) {
+        if (it.isIntersecting) { it.target.classList.add("seen"); io.unobserve(it.target); }
+      });
+    }, { rootMargin: "0px 0px -8% 0px", threshold: 0.08 });
+    reveals.forEach(function (el) { io.observe(el); });
+  }
 })();

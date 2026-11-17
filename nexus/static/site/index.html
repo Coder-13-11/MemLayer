@@ -1,98 +1,136 @@
 <!--title: One record for every AI tool your team uses -->
 <section class="hero" aria-labelledby="hero-title">
   <div class="hero-grid">
-    <article class="sheet original" data-form>
-      <div class="stub" aria-hidden="true"><span>Decision record</span><span class="serial">No. 000412</span></div>
+    <div class="hero-copy">
+      <p class="recno"><span class="dot ok"></span>Decision record <b>No. 000412</b></p>
       <h1 id="hero-title">Write it once. Every agent gets the same copy.</h1>
       <p class="lede">{{BRAND_NAME}} is the shared record of what your project has decided. Claude Code, Cursor, Codex and ChatGPT read it before they act, and you get a receipt of what each one was told.</p>
-      <div class="fld live">
-        <label for="decision">Decision <span class="try">try it: type your own</span></label>
-        <input id="decision" class="entry" type="text" value="Use Vitest for unit tests" maxlength="60" autocomplete="off" spellcheck="false" data-entry>
-      </div>
-      <div class="fld-row">
-        <div class="fld"><span class="lbl">Entered by</span><span class="entry sm">maya@acme.example</span></div>
-        <div class="fld"><span class="lbl">Replaces</span><span class="entry sm">No. 000398, Use Jest</span></div>
-        <div class="fld confirm"><span class="lbl">Confirmed by a person</span><span class="tick" aria-hidden="true"></span><span class="visually-hidden">Yes</span></div>
-      </div>
-      <div class="sign">
+      <div class="cta-row">
         <a class="btn primary big" href="{{SIGNUP_HREF}}">Create a workspace</a>
-        <span class="sign-note">Free plan. No card. Connect your first tool in about two minutes.</span>
+        <a class="btn ghost big" href="/docs/quickstart">Read the quickstart</a>
       </div>
-      <div class="designation" aria-hidden="true">Original · the record</div>
-    </article>
+      <p class="cta-note">Free plan. No card. About two minutes to connect your first tool.</p>
+    </div>
 
-    <div class="copies" aria-label="The same line, as each AI tool receives it">
-      <article class="sheet copy pink" data-copy>
-        <div class="stub"><span>Copy 2</span><span>Claude Code</span></div>
-        <p class="carbon" data-carbon>Use Vitest for unit tests</p>
-        <p class="copy-note">Read at session start</p>
-      </article>
-      <article class="sheet copy sky" data-copy>
-        <div class="stub"><span>Copy 3</span><span>Cursor</span></div>
-        <p class="carbon" data-carbon>Use Vitest for unit tests</p>
-        <p class="copy-note">Read through the connector</p>
-      </article>
-      <article class="sheet copy mint" data-copy>
-        <div class="stub"><span>Copy 4</span><span>Codex</span></div>
-        <p class="carbon" data-carbon>Use Vitest for unit tests</p>
-        <p class="copy-note">Added to each request</p>
-      </article>
+    <div class="console" data-form>
+      <div class="card entry-card">
+        <div class="card-head"><span>Decision</span><span class="mono dim">No. 000412</span></div>
+        <label class="visually-hidden" for="decision">Decision text. Type your own.</label>
+        <div class="entry-line"><span class="prompt" aria-hidden="true">&gt;</span>
+          <input id="decision" class="entry" type="text" value="Use Vitest for unit tests" maxlength="56" autocomplete="off" spellcheck="false" data-entry>
+        </div>
+        <div class="tags">
+          <span class="tag"><i class="dot ok"></i>Confirmed by maya@acme.example</span>
+          <span class="tag">Replaces No. 000398</span>
+          <span class="tag hint">Type to change it</span>
+        </div>
+      </div>
+      <div class="wire" aria-hidden="true"><span></span><span></span><span></span></div>
+      <div class="agents" aria-label="The same line, as each AI tool receives it">
+        <article class="card agent" data-copy>
+          <div class="card-head"><span>Claude Code</span><span class="sync" data-sync>synced</span></div>
+          <p class="carbon" data-carbon>Use Vitest for unit tests</p>
+          <p class="agent-note">Read at session start</p>
+        </article>
+        <article class="card agent" data-copy>
+          <div class="card-head"><span>Cursor</span><span class="sync" data-sync>synced</span></div>
+          <p class="carbon" data-carbon>Use Vitest for unit tests</p>
+          <p class="agent-note">Read through the connector</p>
+        </article>
+        <article class="card agent" data-copy>
+          <div class="card-head"><span>Codex</span><span class="sync" data-sync>synced</span></div>
+          <p class="carbon" data-carbon>Use Vitest for unit tests</p>
+          <p class="agent-note">Added to each request</p>
+        </article>
+      </div>
     </div>
   </div>
 </section>
 
-<section class="band drift" aria-labelledby="drift-title">
-  <div class="wrap two">
-    <div>
-      <h2 id="drift-title">Three tools, three versions of what you decided.</h2>
-      <p>Each AI tool keeps its own notes. One remembers a decision you reversed in June. Another reads a rules file nobody updated. A third was never told. They are all confident, and none of them can see the others.</p>
-      <p>The cost shows up as work: a pull request that reintroduces the library you removed, an agent that argues for the approach you rejected, a teammate's assistant that contradicts yours.</p>
-    </div>
-    <div class="slips" aria-label="Example: what three tools each believe">
-      <figure class="slip a"><figcaption>Claude Code, its own memory</figcaption><p>Tests use Vitest.</p></figure>
-      <figure class="slip b"><figcaption>Cursor, a rules file from March</figcaption><p>Always write Jest tests.</p></figure>
-      <figure class="slip c"><figcaption>ChatGPT, a saved memory</figcaption><p>The team is evaluating Mocha.</p></figure>
-    </div>
-  </div>
-</section>
-
-<section class="band record" id="record" aria-labelledby="record-title">
+<section class="band" aria-labelledby="drift-title">
   <div class="wrap">
-    <div class="head">
-      <h2 id="record-title">Every line says who wrote it and whether anyone checked.</h2>
-      <p>The record is not a pile of remembered text. Each entry is a decision, an assumption, a finding or an open question, with its author, its evidence and its history. A model can write an entry. Only a person can confirm one, and rewording a confirmed entry clears the confirmation.</p>
+    <div class="head reveal">
+      <h2 id="drift-title">Three tools, three versions of what you decided.</h2>
+      <p>Each AI tool keeps its own notes, and none of them can see the others. The cost shows up as work: a pull request that brings back the library you removed, an agent arguing for the approach you rejected.</p>
     </div>
-    <div class="sheet ledger" role="region" aria-label="Example record" tabindex="0">
-      <div class="stub"><span>Project ledger · Checkout rebuild</span><span class="serial">Sheet 1 of 3</span></div>
-      <table>
-        <thead><tr><th scope="col">No.</th><th scope="col">Entry</th><th scope="col">Written by</th><th scope="col">Checked</th></tr></thead>
-        <tbody>
-          <tr><td class="n">0412</td><td><span class="kind">Decision</span><span class="txt">Use Vitest for unit tests</span></td><td>claude-code</td><td><span class="mark-ok">Confirmed</span> maya</td></tr>
-          <tr class="void"><td class="n">0398</td><td><span class="kind">Decision</span><span class="txt">Use Jest for unit tests</span><span class="stamp sm">Replaced by 0412</span></td><td>chatgpt</td><td>Kept as history</td></tr>
-          <tr><td class="n">0405</td><td><span class="kind">Decision</span><span class="txt">Store money as integer minor units, never floats</span></td><td>maya</td><td><span class="mark-ok">Confirmed</span> 1 source</td></tr>
-          <tr class="disputed"><td class="n">0419</td><td><span class="kind">Assumption</span><span class="txt">Webhooks arrive within 30 seconds</span></td><td>chatgpt</td><td><span class="mark-bad">Disputed</span> by 0431</td></tr>
-          <tr><td class="n">0431</td><td><span class="kind">Finding</span><span class="txt">On 14 August, webhook delivery took up to 4 minutes</span></td><td>maya</td><td><span class="mark-ok">Confirmed</span> 1 source</td></tr>
-          <tr class="disputed"><td class="n">0440</td><td><span class="kind">Finding</span><span class="txt">Cart service p95 latency is 180 ms</span></td><td>cursor</td><td><span class="mark-bad">Conflicts</span> with 0441</td></tr>
-          <tr class="disputed"><td class="n">0441</td><td><span class="kind">Finding</span><span class="txt">Cart service p95 latency is 420 ms</span></td><td>gemini</td><td><span class="mark-bad">Conflicts</span> with 0440</td></tr>
-          <tr><td class="n">0447</td><td><span class="kind">Question</span><span class="txt">Do we need partial refunds at launch?</span></td><td>maya</td><td>Open</td></tr>
-        </tbody>
-      </table>
-      <div class="designation" aria-hidden="true">Invented example · the same project ships with the product</div>
+    <div class="trio reveal">
+      <article class="card belief">
+        <div class="card-head"><span>Claude Code</span><span class="dim">its own memory</span></div>
+        <p class="say">Tests use Vitest.</p>
+        <p class="foot ok"><i class="dot ok"></i>Matches what you decided</p>
+      </article>
+      <article class="card belief">
+        <div class="card-head"><span>Cursor</span><span class="dim">a rules file from March</span></div>
+        <p class="say">Always write Jest tests.</p>
+        <p class="foot bad"><i class="dot bad"></i>You replaced this in June</p>
+      </article>
+      <article class="card belief">
+        <div class="card-head"><span>ChatGPT</span><span class="dim">a saved memory</span></div>
+        <p class="say">The team is evaluating Mocha.</p>
+        <p class="foot warn"><i class="dot warn"></i>Nobody ever decided this</p>
+      </article>
     </div>
-    <ul class="points">
-      <li><h3>Nothing is overwritten</h3><p>A replaced decision is voided, not deleted. Its history stays, with who changed it and why.</p></li>
-      <li><h3>Conflicts stay visible</h3><p>When two tools disagree, both entries are shown as a conflict until a person settles it. Nothing picks a side quietly.</p></li>
-      <li><h3>AI tools cannot delete or confirm</h3><p>They read, add and correct. Deleting and vouching are for people, and every change is attributed.</p></li>
-    </ul>
   </div>
 </section>
 
-<section class="band check" id="check" aria-labelledby="check-title">
+<section class="band alt" id="record" aria-labelledby="record-title">
+  <div class="wrap">
+    <div class="head reveal">
+      <h2 id="record-title">Every line says who wrote it and whether anyone checked.</h2>
+      <p>Each entry is a decision, an assumption, a finding or an open question, with its author, its evidence and its history. A model can write an entry. Only a person can confirm one.</p>
+    </div>
+    <div class="card ledger reveal">
+      <div class="ledger-bar">
+        <span class="mono dim">Checkout rebuild · invented example</span>
+        <div class="filters" role="group" aria-label="Filter entries">
+          <button type="button" data-filter="all" aria-pressed="true">All</button>
+          <button type="button" data-filter="confirmed" aria-pressed="false">Confirmed</button>
+          <button type="button" data-filter="replaced" aria-pressed="false">Replaced</button>
+          <button type="button" data-filter="conflict" aria-pressed="false">Conflicts</button>
+          <button type="button" data-filter="open" aria-pressed="false">Open</button>
+        </div>
+      </div>
+      <div class="table-scroll" tabindex="0" role="region" aria-label="Example record">
+        <table>
+          <thead><tr><th scope="col">No.</th><th scope="col">Kind</th><th scope="col">Entry</th><th scope="col">Written by</th><th scope="col">Checked</th></tr></thead>
+          <tbody data-ledger>
+            <tr data-state="confirmed"><td class="n">0412</td><td class="k">Decision</td><td>Use Vitest for unit tests</td><td class="by">claude-code</td><td><span class="st ok">Confirmed</span> maya</td></tr>
+            <tr data-state="replaced"><td class="n">0398</td><td class="k">Decision</td><td class="struck">Use Jest for unit tests</td><td class="by">chatgpt</td><td><span class="st bad">Replaced</span> by 0412</td></tr>
+            <tr data-state="confirmed"><td class="n">0405</td><td class="k">Decision</td><td>Store money as integer minor units, never floats</td><td class="by">maya</td><td><span class="st ok">Confirmed</span> 1 source</td></tr>
+            <tr data-state="conflict"><td class="n">0419</td><td class="k">Assumption</td><td>Payment webhooks arrive within 30 seconds</td><td class="by">chatgpt</td><td><span class="st warn">Disputed</span> by 0431</td></tr>
+            <tr data-state="confirmed"><td class="n">0431</td><td class="k">Finding</td><td>On 14 August, webhook delivery took up to 4 minutes</td><td class="by">maya</td><td><span class="st ok">Confirmed</span> 1 source</td></tr>
+            <tr data-state="conflict"><td class="n">0440</td><td class="k">Finding</td><td>Cart service p95 latency is 180 ms</td><td class="by">cursor</td><td><span class="st warn">Conflicts</span> with 0441</td></tr>
+            <tr data-state="conflict"><td class="n">0441</td><td class="k">Finding</td><td>Cart service p95 latency is 420 ms</td><td class="by">gemini</td><td><span class="st warn">Conflicts</span> with 0440</td></tr>
+            <tr data-state="open"><td class="n">0447</td><td class="k">Question</td><td>Do we need partial refunds at launch?</td><td class="by">maya</td><td><span class="st">Open</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="ledger-foot mono dim" data-ledger-count>8 of 8 entries</p>
+    </div>
+    <div class="bento reveal">
+      <article class="card inv wide">
+        <h3>Nothing is overwritten</h3>
+        <p>A replaced decision is voided, not deleted. Its history stays, with who changed it and the reason they gave.</p>
+        <p class="mono trail"><span class="bad">0398 voided</span> → <span class="ok">0412 current</span> · v2 · reason kept</p>
+      </article>
+      <article class="card inv">
+        <h3>Conflicts stay visible</h3>
+        <p>When two tools disagree, both entries are shown as a conflict until a person settles it.</p>
+      </article>
+      <article class="card inv">
+        <h3>People vouch, models propose</h3>
+        <p>AI tools read, add and correct. They cannot delete or confirm, and rewording an entry clears its confirmation.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="check" aria-labelledby="check-title">
   <div class="wrap two">
-    <div>
+    <div class="reveal">
       <h2 id="check-title">It stops a plan before it repeats something you already fixed.</h2>
       <p>Before an agent acts, it sends its plan to the record. If a step matches a decision the team replaced, or gives a different value for something already decided, the agent is told, with the entry that replaced it.</p>
-      <p class="small">The check is word matching and value comparison. It involves no AI model, so it is fast, repeatable and narrow: it will miss a paraphrase, and it never says a plan is right.</p>
+      <p class="small">Word matching and value comparison. No AI model, so it is fast and repeatable, and narrow: it misses a paraphrase and never says a plan is right. These results come from the product's real check, run on the example project.</p>
       <div class="choices" role="group" aria-label="Choose a planned step to check">
         <button type="button" class="choice" data-check="0" aria-pressed="true">Add Jest tests for the cart reducer</button>
         <button type="button" class="choice" data-check="1" aria-pressed="false">Call the Stripe SDK directly from the refund handler</button>
@@ -101,101 +139,120 @@
         <button type="button" class="choice" data-check="4" aria-pressed="false">Rename the README</button>
       </div>
     </div>
-    <div class="sheet slipform" aria-live="polite" data-check-out>
-      <div class="stub"><span>Plan check</span><span class="serial" data-check-no>No. 0001</span></div>
-      <p class="lbl">Planned step</p>
-      <p class="entry" data-check-step>Add Jest tests for the cart reducer</p>
-      <div class="stamp" data-check-stamp>Resembles a replaced record</div>
-      <dl data-check-lines>
+    <div class="card term reveal" aria-live="polite" data-check-out>
+      <div class="term-bar"><span class="lights" aria-hidden="true"><i></i><i></i><i></i></span><span class="mono dim">nexus check</span></div>
+      <pre class="term-body"><span class="dim">$</span> nexus check "Checkout rebuild" \
+    "<span data-check-step>Add Jest tests for the cart reducer</span>"<span class="caret" aria-hidden="true"></span></pre>
+      <div class="verdict bad" data-check-verdict>
+        <span class="badge" data-check-badge>BLOCKED</span>
+        <span data-check-stamp>Resembles a replaced record</span>
+      </div>
+      <dl class="term-lines" data-check-lines>
         <dt>Replaced</dt><dd>0398, Use Jest for unit tests</dd>
         <dt>Now</dt><dd>0412, Use Vitest for unit tests (confirmed)</dd>
       </dl>
-      <p class="fine" data-check-fine>Exit code 2 from <code>nexus check</code>, so a CI step can fail on it.</p>
+      <p class="exit mono"><span class="dim">exit code</span> <b data-check-exit>2</b> <span class="dim" data-check-fine>A CI step can fail on it.</span></p>
     </div>
   </div>
 </section>
 
-<section class="band receipt-band" id="receipt" aria-labelledby="receipt-title">
+<section class="band alt" id="receipt" aria-labelledby="receipt-title">
   <div class="wrap two">
-    <div class="till" data-till>
-      <div class="till-paper">
-        <p class="t-brand">{{BRAND_NAME}}</p>
-        <p class="t-kind">Context receipt</p>
-        <p class="t-no">No. <b>RCP 7F3A 91C2</b></p>
-        <dl class="t-meta"><dt>Handed to</dt><dd>Cursor, for sam@acme.example</dd><dt>Model</dt><dd>as sent by the tool</dd><dt>When</dt><dd>14 Nov, 10:42</dd></dl>
-        <ul class="t-lines">
-          <li><span>Use Vitest for unit tests</span><i></i><b>v2 confirmed</b></li>
-          <li><span>Money is integer minor units</span><i></i><b>v2 confirmed</b></li>
-          <li data-changes><span>Payments go through PaymentsPort</span><i></i><b>v2 confirmed</b><em>now v3, reworded after this was read</em></li>
-          <li><span>Webhooks arrive within 30 s</span><i></i><b>v1 disputed</b></li>
-          <li><span>Use Jest for unit tests</span><i></i><b>v2 replaced</b></li>
-          <li><span>Cart p95 latency, 180 ms vs 420 ms</span><i></i><b>conflict</b></li>
-        </ul>
-        <p class="t-total"><span>6 of 18 records shown</span><span>~1,004 tokens</span></p>
-        <p class="t-foot" data-till-foot>Every record is still as the model saw it.</p>
+    <div class="card rcp reveal" data-till>
+      <div class="rcp-head">
+        <span>Context receipt</span><span class="mono">No. <b>RCP 7F3A 91C2</b></span>
+      </div>
+      <dl class="rcp-meta">
+        <dt>Handed to</dt><dd>Cursor, for sam@acme.example</dd>
+        <dt>When</dt><dd>14 Nov, 10:42</dd>
+        <dt>Text hash</dt><dd class="mono">sha256 9c41…e07b</dd>
+      </dl>
+      <ul class="rcp-lines">
+        <li><span>Use Vitest for unit tests</span><b>v2 confirmed</b></li>
+        <li><span>Money is integer minor units</span><b>v2 confirmed</b></li>
+        <li data-changes><span>Payments go through PaymentsPort</span><b>v2 confirmed</b><em><span class="minus">- v2 confirmed, as the model read it</span><span class="plus">+ v3 unverified, reworded 11:07</span></em></li>
+        <li><span>Webhooks arrive within 30 s</span><b class="warn">v1 disputed</b></li>
+        <li><span>Use Jest for unit tests</span><b class="bad">v2 replaced</b></li>
+        <li><span>Cart p95 latency, 180 ms vs 420 ms</span><b class="warn">conflict</b></li>
+      </ul>
+      <p class="rcp-total mono"><span>6 of 18 entries shown</span><span>~1,029 tokens</span></p>
+      <p class="rcp-foot" data-till-foot><i class="dot ok"></i>Every entry is still as the model saw it.</p>
+    </div>
+    <div class="reveal">
+      <h2 id="receipt-title">When an agent surprises you, read the receipt.</h2>
+      <p>Each time a model is handed your project, {{BRAND_NAME}} writes down which entries it was given, at which version, and a hash of the exact text. If an entry changes afterwards, the receipt says so. You stop guessing what the model knew.</p>
+      <p>The briefing is small on purpose and is held unchanged for a few minutes at a time, so your provider's prompt cache keeps working.</p>
+      <button type="button" class="btn toggle" data-till-toggle aria-pressed="false"><span class="switch" aria-hidden="true"></span><span data-till-label>Simulate: change a decision after it was read</span></button>
+    </div>
+  </div>
+</section>
+
+<section class="band" aria-labelledby="ways-title">
+  <div class="wrap">
+    <div class="head reveal">
+      <h2 id="ways-title">Three ways in, for three kinds of tool.</h2>
+      <p>You bring your own AI tools and provider keys. {{BRAND_NAME}} sells no model access and adds nothing to what your providers charge.</p>
+    </div>
+    <div class="card deck reveal" data-tabs>
+      <div class="tablist" role="tablist" aria-label="Ways to connect">
+        <button type="button" role="tab" id="tab-mcp" aria-controls="panel-mcp" aria-selected="true">Connector <span>MCP</span></button>
+        <button type="button" role="tab" id="tab-gw" aria-controls="panel-gw" aria-selected="false" tabindex="-1">Gateway <span>Base URL</span></button>
+        <button type="button" role="tab" id="tab-cli" aria-controls="panel-cli" aria-selected="false" tabindex="-1">Command line <span>Hooks and CI</span></button>
+      </div>
+      <div class="panel" role="tabpanel" id="panel-mcp" aria-labelledby="tab-mcp">
+        <p>For ChatGPT, Claude, Cursor and VS Code. Paste one address, sign in, choose a workspace. A connection can be read-only.</p>
+        <div class="code"><pre><span class="dim"># any app with connectors</span>
+{{MCP_URL}}
+
+<span class="dim"># Claude Code</span>
+{{CLAUDE_CODE_CMD}}</pre><button type="button" data-copy-text="{{CLAUDE_CODE_CMD}}">Copy</button></div>
+      </div>
+      <div class="panel" role="tabpanel" id="panel-gw" aria-labelledby="tab-gw" hidden>
+        <p>For tools that only take a base URL. Every request gets the briefing added and leaves a receipt. Your provider key passes straight through and is never stored.</p>
+        <div class="code"><pre>export ANTHROPIC_BASE_URL={{GATEWAY_URL}}
+export ANTHROPIC_CUSTOM_HEADERS="x-nexus-key: nxk_...
+x-nexus-project: Checkout rebuild"</pre><button type="button" data-copy-text="export ANTHROPIC_BASE_URL={{GATEWAY_URL}}">Copy</button></div>
+      </div>
+      <div class="panel" role="tabpanel" id="panel-cli" aria-labelledby="tab-cli" hidden>
+        <p>Print the briefing at the start of an agent session. Fail a build when a plan repeats a decision the team replaced.</p>
+        <div class="code"><pre><span class="dim"># at session start</span>
+nexus brief "Checkout rebuild"
+
+<span class="dim"># in CI: exits 2 on a conflict</span>
+nexus check "Checkout rebuild" --file plan.txt</pre><button type="button" data-copy-text='nexus check "Checkout rebuild" --file plan.txt'>Copy</button></div>
       </div>
     </div>
-    <div>
-      <h2 id="receipt-title">When an agent surprises you, read the receipt.</h2>
-      <p>Each time a model is handed your project, {{BRAND_NAME}} writes down exactly which entries it was given and at which version. If an entry changed afterwards, the receipt says so. You stop guessing what the model knew.</p>
-      <p>The briefing itself is small on purpose: decisions first, then open conflicts and what was replaced. It is held unchanged for a few minutes at a time so your provider's prompt cache keeps working.</p>
-      <button type="button" class="btn onblue" data-till-toggle aria-pressed="false">Change a decision after it was read</button>
-    </div>
   </div>
 </section>
 
-<section class="band ways" aria-labelledby="ways-title">
+<section class="band alt" aria-labelledby="limits-title">
   <div class="wrap">
-    <div class="head"><h2 id="ways-title">Three ways in, for three kinds of tool.</h2>
-      <p>You bring your own AI tools and your own provider keys. {{BRAND_NAME}} sells no model access and adds nothing to what your providers charge.</p></div>
-    <div class="tickets">
-      <article class="sheet ticket">
-        <div class="stub"><span>Connector</span><span>MCP</span></div>
-        <h3>Apps with connectors</h3>
-        <p>ChatGPT, Claude, Cursor and VS Code. Paste one address, sign in, choose a workspace. A connection can be read-only.</p>
-        <div class="cmd"><code>{{MCP_URL}}</code><button type="button" data-copy-text="{{MCP_URL}}">Copy</button></div>
-      </article>
-      <article class="sheet ticket">
-        <div class="stub"><span>Gateway</span><span>Base URL</span></div>
-        <h3>Tools that only take a base URL</h3>
-        <p>Point the tool at {{BRAND_NAME}}. Every request gets the briefing added and leaves a receipt. Your provider key can pass straight through.</p>
-        <div class="cmd"><code>ANTHROPIC_BASE_URL={{GATEWAY_URL}}</code><button type="button" data-copy-text="ANTHROPIC_BASE_URL={{GATEWAY_URL}}">Copy</button></div>
-      </article>
-      <article class="sheet ticket">
-        <div class="stub"><span>Command line</span><span>Hooks and CI</span></div>
-        <h3>Terminals, hooks and pipelines</h3>
-        <p>Print the briefing at the start of an agent session. Fail a build when a plan repeats a decision the team replaced.</p>
-        <div class="cmd"><code>nexus check "Checkout" "Add Jest tests"</code><button type="button" data-copy-text='nexus check "Checkout" "Add Jest tests"'>Copy</button></div>
-      </article>
-    </div>
-  </div>
-</section>
-
-<section class="band limits" aria-labelledby="limits-title">
-  <div class="wrap two">
-    <div>
+    <div class="head reveal">
       <h2 id="limits-title">What it does not do.</h2>
-      <p>A record you cannot trust is worse than none, so here is where the edges are.</p>
-      <a class="link strong" href="/docs/limits">Read the full list of limits</a>
+      <p>A record you cannot trust is worse than none, so here is where the edges are. <a href="/docs/limits">The full list of limits</a>.</p>
     </div>
-    <ul class="nots">
-      <li><b>It calls no AI model.</b> Conflicts are found from structure and wording, so a contradiction nobody recorded stays hidden.</li>
-      <li><b>It does not judge evidence.</b> It records that a source is attached and who confirmed the entry. Whether the source is right is a person's call.</li>
-      <li><b>It cannot make an agent obey.</b> It puts the decision in front of the model and records that it did. Following it is still up to the model.</li>
-      <li><b>It keeps no conversations.</b> The gateway stores counts, model names and record numbers. Prompts and answers pass through and are not kept.</li>
-    </ul>
+    <div class="nots reveal">
+      <article class="card not"><h3>It calls no AI model</h3><p>Conflicts are found from structure and wording, so a contradiction nobody recorded stays hidden.</p></article>
+      <article class="card not"><h3>It does not judge evidence</h3><p>It records that a source is attached and who confirmed the entry. Whether the source is right is a person's call.</p></article>
+      <article class="card not"><h3>It cannot make an agent obey</h3><p>It puts the decision in front of the model and records that it did. Following it is still up to the model.</p></article>
+      <article class="card not"><h3>It keeps no conversations</h3><p>The gateway stores counts, model names and record numbers. Prompts and answers pass through and are not kept.</p></article>
+    </div>
   </div>
 </section>
 
 <section class="close" aria-labelledby="close-title">
-  <div class="sheet original closing">
-    <div class="stub" aria-hidden="true"><span>New workspace</span><span class="serial">No. 000001</span></div>
+  <div class="card closing reveal">
+    <div class="card-head"><span>New workspace</span><span class="mono dim">No. 000001</span></div>
     <h2 id="close-title">Start the record your agents read.</h2>
-    <p class="lede">Create a workspace, load the example project, connect one tool. If it is not useful by the end of the afternoon, export everything as one file and delete the workspace.</p>
-    <div class="sign">
+    <p>Create a workspace, load the example project, connect one tool.</p>
+    <div class="cta-row">
       <a class="btn primary big" href="{{SIGNUP_HREF}}">Create a workspace</a>
-      <a class="link strong" href="/docs/quickstart">Read the quickstart</a>
+      <a class="btn ghost big" href="/docs/quickstart">Read the quickstart</a>
     </div>
-    <div class="designation" aria-hidden="true">Sign here</div>
+    <ul class="guarantees">
+      <li><i class="dot ok"></i>Export everything as one JSON file</li>
+      <li><i class="dot ok"></i>Delete the workspace and its storage goes with it</li>
+      <li><i class="dot ok"></i>Free plan, no card</li>
+    </ul>
   </div>
 </section>
