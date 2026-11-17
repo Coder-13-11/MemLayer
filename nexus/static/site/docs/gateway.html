@@ -1,0 +1,65 @@
+<!--title: Gateway -->
+<h1>Gateway</h1>
+<p>For tools that can change a base URL but cannot use connectors. The gateway forwards a request to the provider that speaks the same wire format, adds the project's briefing on the way, and writes a receipt.</p>
+<div class="callout"><p>It is deliberately not a router. It does not translate between formats, pick models, or resell access. You use your own provider keys and pay your provider directly.</p></div>
+
+<h2>Endpoints</h2>
+<table>
+<thead><tr><th>Path</th><th>Format</th><th>Forwarded to</th></tr></thead>
+<tbody>
+<tr><td><code>POST /v1/chat/completions</code></td><td>OpenAI Chat Completions</td><td>OpenAI, Google (its OpenAI-compatible endpoint), Anthropic (its compatibility endpoint), or any OpenAI-compatible base URL you add</td></tr>
+<tr><td><code>POST /v1/responses</code></td><td>OpenAI Responses</td><td>OpenAI or an OpenAI-compatible base URL</td></tr>
+<tr><td><code>POST /v1/messages</code></td><td>Anthropic Messages</td><td>Anthropic</td></tr>
+<tr><td><code>POST /v1/messages/count_tokens</code></td><td>Anthropic token counting</td><td>Anthropic</td></tr>
+</tbody>
+</table>
+<p>Streaming responses are relayed byte for byte.</p>
+
+<h2>Two ways to supply the provider key</h2>
+<h3>Stored</h3>
+<p>Store the provider key once under <strong>Settings, Provider keys</strong>. The tool sends only the {{BRAND_NAME}} key.</p>
+<pre><code>curl {{API_URL}}/chat/completions \
+  -H "Authorization: Bearer nxk_..." \
+  -H "x-nexus-project: Checkout rebuild" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "your-model", "messages": [{"role": "user", "content": "Add tests for the cart"}]}'</code></pre>
+<h3>Pass-through</h3>
+<p>Keep sending your own provider key as usual and add the {{BRAND_NAME}} key in a separate header. The provider key is forwarded untouched and is never stored or logged.</p>
+<pre><code>export ANTHROPIC_BASE_URL={{GATEWAY_URL}}
+export ANTHROPIC_CUSTOM_HEADERS="x-nexus-key: nxk_...
+x-nexus-project: Checkout rebuild"</code></pre>
+
+<h2>Request headers</h2>
+<table>
+<thead><tr><th>Header</th><th>Meaning</th></tr></thead>
+<tbody>
+<tr><td><code>x-nexus-project</code></td><td>Project name or id. Without it, the key's default project is used. With neither, nothing is added and the request is only metered.</td></tr>
+<tr><td><code>x-nexus-context</code></td><td><code>all</code> (default), <code>confirmed</code> (only entries a person confirmed) or <code>off</code>.</td></tr>
+<tr><td><code>x-nexus-context-budget</code></td><td>Size limit for the briefing in tokens. Default 1200, from 300 to 6000.</td></tr>
+<tr><td><code>x-nexus-provider</code></td><td>Force <code>openai</code>, <code>anthropic</code>, <code>google</code>, <code>openai_compatible</code> or <code>mock</code>. Otherwise chosen from the endpoint and the model name.</td></tr>
+<tr><td><code>x-nexus-refresh: 1</code></td><td>Rebuild the briefing now instead of waiting for it to expire.</td></tr>
+</tbody>
+</table>
+
+<h2>Response headers</h2>
+<table>
+<thead><tr><th>Header</th><th>Meaning</th></tr></thead>
+<tbody>
+<tr><td><code>x-nexus-receipt</code></td><td>The receipt for the briefing that was added.</td></tr>
+<tr><td><code>x-nexus-context-records</code></td><td>How many entries it contained.</td></tr>
+<tr><td><code>x-nexus-provider</code></td><td>Where the request was sent.</td></tr>
+</tbody>
+</table>
+
+<h2>Where the briefing goes, and why it is held still</h2>
+<p>The briefing is added after your tool's own system text, never before it: as an extra system message for Chat Completions, a final system block for Messages, and appended to <code>instructions</code> for Responses. Your own cached prefix is not disturbed.</p>
+<p>Once built for a project, the briefing is reused unchanged for 15 minutes, even if the record changes, so the start of the prompt stays identical and your provider's prompt cache keeps working. A new receipt is written each time it is rebuilt, not on every request.</p>
+
+<h2>What is kept</h2>
+<p>For each request: the time, key name, model name, provider, status code, token counts as reported by the provider, and the receipt number. Request and response text is not stored or logged.</p>
+
+<h2>The mock provider</h2>
+<p>Any model name starting with <code>mock</code> is answered inside {{BRAND_NAME}}, in all three formats, with a reply that says plainly no model was called. It exists for trying the gateway and for tests.</p>
+
+<h2>Tested against</h2>
+<p>The gateway's tests run against stand-in servers that speak each wire format, including streaming. It has not been run against live provider accounts as part of the test suite. If a provider changes its format, forwarding is unaffected but usage counts may read as zero.</p>

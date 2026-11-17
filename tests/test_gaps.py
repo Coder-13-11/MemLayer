@@ -1,4 +1,4 @@
-from memlayer.gaps import analyze_gaps
+from nexus.gaps import analyze_gaps
 
 from .conftest import PROJECT
 

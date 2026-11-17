@@ -2,11 +2,11 @@ import json
 
 import pytest
 
-from memlayer.context import build_project_context
-from memlayer.gaps import analyze_gaps
-from memlayer.importer import import_text
-from memlayer.models import NotFound, ValidationError
-from memlayer.store import MemoryStore
+from nexus.context import build_project_context
+from nexus.gaps import analyze_gaps
+from nexus.importer import import_text
+from nexus.models import NotFound, ValidationError
+from nexus.store import MemoryStore
 
 from .conftest import PROJECT, SAMPLES, dump
 

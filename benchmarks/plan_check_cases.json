@@ -1,0 +1,39 @@
+{
+  "about": "Labelled planned steps for the example project (nexus/demo.py). Written before the check was run on them. 'replaced' = the step proposes something the team superseded, and should be flagged. 'conflict' = it states a different value for a recorded claim key. 'clear' = it should not block. The hard cases are deliberate: paraphrases that share no words with the record, and steps that mention a replaced thing in order to remove or explain it.",
+  "cases": [
+    {"expect": "replaced", "text": "Add Jest tests for the cart reducer"},
+    {"expect": "replaced", "text": "Use Jest for the new unit tests"},
+    {"expect": "replaced", "text": "Write unit tests with Jest"},
+    {"expect": "replaced", "text": "Set up Jest for unit testing the checkout service"},
+    {"expect": "replaced", "text": "Unit tests should use Jest again"},
+    {"expect": "replaced", "text": "Call the Stripe SDK directly from the refund handler"},
+    {"expect": "replaced", "text": "Import the Stripe SDK in the checkout handlers"},
+    {"expect": "replaced", "text": "Use the Stripe client directly in checkout handler code"},
+    {"expect": "replaced", "text": "Call Stripe directly from handlers to save time"},
+    {"expect": "replaced", "text": "Invoke the payment provider's API straight from the order controller", "note": "paraphrase with almost no shared words"},
+    {"expect": "replaced", "text": "Go back to the old test runner we used at kickoff", "note": "paraphrase with no shared words"},
+    {"expect": "replaced", "text": "Write the specs using the legacy testing library", "note": "paraphrase with no shared words"},
+
+    {"expect": "conflict", "text": "Store prices as floats", "subject": "money.representation", "value": "float"},
+    {"expect": "conflict", "text": "Use Mocha as the test framework", "subject": "test.framework", "value": "mocha"},
+    {"expect": "conflict", "text": "Represent money as decimal strings", "subject": "money.representation", "value": "decimal strings"},
+    {"expect": "conflict", "text": "Assume cart p95 latency is 250 ms", "subject": "cart.p95_latency_ms", "value": "250"},
+
+    {"expect": "clear", "text": "Rename the README"},
+    {"expect": "clear", "text": "Add a loading spinner to the cart page"},
+    {"expect": "clear", "text": "Upgrade Node to the current LTS release"},
+    {"expect": "clear", "text": "Write Vitest tests for the cart reducer"},
+    {"expect": "clear", "text": "Route the refund call through the PaymentsPort adapter"},
+    {"expect": "clear", "text": "Add an idempotency key to the refund request"},
+    {"expect": "clear", "text": "Store amounts as integer cents"},
+    {"expect": "clear", "text": "Use Vitest for the cart tests", "subject": "test.framework", "value": "vitest"},
+    {"expect": "clear", "text": "Add unit tests for the tax display component", "note": "shares 'unit tests' with a replaced record"},
+    {"expect": "clear", "text": "Run the unit tests in CI on every push", "note": "shares 'unit tests' with a replaced record"},
+    {"expect": "clear", "text": "Create handlers for the new checkout endpoints", "note": "shares 'checkout handlers' with a replaced record"},
+    {"expect": "clear", "text": "Update the SDK version of the analytics client", "note": "shares 'SDK' with a replaced record"},
+    {"expect": "clear", "text": "Add payment webhook retry handling"},
+    {"expect": "clear", "text": "Remove the leftover Jest configuration files", "note": "mentions a replaced thing in order to remove it"},
+    {"expect": "clear", "text": "Delete the direct Stripe SDK import from the checkout handlers", "note": "mentions a replaced thing in order to remove it"},
+    {"expect": "clear", "text": "Document why we moved from Jest to Vitest for unit tests", "note": "mentions a replaced thing in order to explain it"}
+  ]
+}

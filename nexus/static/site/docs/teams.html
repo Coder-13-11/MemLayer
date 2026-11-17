@@ -1,0 +1,29 @@
+<!--title: Teams and roles -->
+<h1>Teams and roles</h1>
+<p>A workspace is a team's record. Everything in it, projects, entries, receipts, keys, belongs to that workspace and is stored apart from every other workspace.</p>
+
+<h2>Roles</h2>
+<table>
+<thead><tr><th>Role</th><th>Can</th></tr></thead>
+<tbody>
+<tr><td>Viewer</td><td>Read everything, check plans.</td></tr>
+<tr><td>Editor</td><td>Also add, correct, confirm and delete entries; create projects; import.</td></tr>
+<tr><td>Admin</td><td>Also invite and remove people, change roles, create API keys, store provider keys, disconnect anyone's apps, read the audit log, export, delete projects.</td></tr>
+<tr><td>Owner</td><td>Also rename or delete the workspace and decide who else is an owner. A workspace always has at least one.</td></tr>
+</tbody>
+</table>
+
+<h2>Invitations</h2>
+<p>An admin invites a person by email with a role. The invitation is a link that works once, for that address only, for seven days. If the server has outgoing mail configured it is emailed; either way the link is shown to the person who created it, so a team can start without mail. Someone signed in with a different address cannot use the link.</p>
+
+<h2>API keys</h2>
+<p>Create one key per place it is used, so each can be revoked on its own. A key is shown once; only a hash is stored. A key is read-only or read-and-write, and can be limited to the REST API, the gateway, or both. Keys cannot confirm entries or administer the workspace.</p>
+
+<h2>Connected apps</h2>
+<p>Each person connects their own AI apps. A connection is for one workspace, acts with that person's role, and can be made read-only. Admins can see and remove every connection to the workspace.</p>
+
+<h2>Limits</h2>
+<p>Each workspace has limits on members, projects, entries, gateway requests per month and requests per minute per key. Current values are shown under <strong>Settings, Usage</strong>. An operator can change them with <code>nexus admin set-plan</code>.</p>
+
+<h2>Leaving, exporting, deleting</h2>
+<p>Anyone can leave a workspace. Admins can download the whole workspace as one JSON file. Owners can delete it, which removes its storage outright. Deleting your account removes any workspace where you are the only member.</p>

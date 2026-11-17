@@ -1,0 +1,201 @@
+<!--title: One record for every AI tool your team uses -->
+<section class="hero" aria-labelledby="hero-title">
+  <div class="hero-grid">
+    <article class="sheet original" data-form>
+      <div class="stub" aria-hidden="true"><span>Decision record</span><span class="serial">No. 000412</span></div>
+      <h1 id="hero-title">Write it once. Every agent gets the same copy.</h1>
+      <p class="lede">{{BRAND_NAME}} is the shared record of what your project has decided. Claude Code, Cursor, Codex and ChatGPT read it before they act, and you get a receipt of what each one was told.</p>
+      <div class="fld live">
+        <label for="decision">Decision <span class="try">try it: type your own</span></label>
+        <input id="decision" class="entry" type="text" value="Use Vitest for unit tests" maxlength="60" autocomplete="off" spellcheck="false" data-entry>
+      </div>
+      <div class="fld-row">
+        <div class="fld"><span class="lbl">Entered by</span><span class="entry sm">maya@acme.example</span></div>
+        <div class="fld"><span class="lbl">Replaces</span><span class="entry sm">No. 000398, Use Jest</span></div>
+        <div class="fld confirm"><span class="lbl">Confirmed by a person</span><span class="tick" aria-hidden="true"></span><span class="visually-hidden">Yes</span></div>
+      </div>
+      <div class="sign">
+        <a class="btn primary big" href="{{SIGNUP_HREF}}">Create a workspace</a>
+        <span class="sign-note">Free plan. No card. Connect your first tool in about two minutes.</span>
+      </div>
+      <div class="designation" aria-hidden="true">Original · the record</div>
+    </article>
+
+    <div class="copies" aria-label="The same line, as each AI tool receives it">
+      <article class="sheet copy pink" data-copy>
+        <div class="stub"><span>Copy 2</span><span>Claude Code</span></div>
+        <p class="carbon" data-carbon>Use Vitest for unit tests</p>
+        <p class="copy-note">Read at session start</p>
+      </article>
+      <article class="sheet copy sky" data-copy>
+        <div class="stub"><span>Copy 3</span><span>Cursor</span></div>
+        <p class="carbon" data-carbon>Use Vitest for unit tests</p>
+        <p class="copy-note">Read through the connector</p>
+      </article>
+      <article class="sheet copy mint" data-copy>
+        <div class="stub"><span>Copy 4</span><span>Codex</span></div>
+        <p class="carbon" data-carbon>Use Vitest for unit tests</p>
+        <p class="copy-note">Added to each request</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="band drift" aria-labelledby="drift-title">
+  <div class="wrap two">
+    <div>
+      <h2 id="drift-title">Three tools, three versions of what you decided.</h2>
+      <p>Each AI tool keeps its own notes. One remembers a decision you reversed in June. Another reads a rules file nobody updated. A third was never told. They are all confident, and none of them can see the others.</p>
+      <p>The cost shows up as work: a pull request that reintroduces the library you removed, an agent that argues for the approach you rejected, a teammate's assistant that contradicts yours.</p>
+    </div>
+    <div class="slips" aria-label="Example: what three tools each believe">
+      <figure class="slip a"><figcaption>Claude Code, its own memory</figcaption><p>Tests use Vitest.</p></figure>
+      <figure class="slip b"><figcaption>Cursor, a rules file from March</figcaption><p>Always write Jest tests.</p></figure>
+      <figure class="slip c"><figcaption>ChatGPT, a saved memory</figcaption><p>The team is evaluating Mocha.</p></figure>
+    </div>
+  </div>
+</section>
+
+<section class="band record" id="record" aria-labelledby="record-title">
+  <div class="wrap">
+    <div class="head">
+      <h2 id="record-title">Every line says who wrote it and whether anyone checked.</h2>
+      <p>The record is not a pile of remembered text. Each entry is a decision, an assumption, a finding or an open question, with its author, its evidence and its history. A model can write an entry. Only a person can confirm one, and rewording a confirmed entry clears the confirmation.</p>
+    </div>
+    <div class="sheet ledger" role="region" aria-label="Example record" tabindex="0">
+      <div class="stub"><span>Project ledger · Checkout rebuild</span><span class="serial">Sheet 1 of 3</span></div>
+      <table>
+        <thead><tr><th scope="col">No.</th><th scope="col">Entry</th><th scope="col">Written by</th><th scope="col">Checked</th></tr></thead>
+        <tbody>
+          <tr><td class="n">0412</td><td><span class="kind">Decision</span><span class="txt">Use Vitest for unit tests</span></td><td>claude-code</td><td><span class="mark-ok">Confirmed</span> maya</td></tr>
+          <tr class="void"><td class="n">0398</td><td><span class="kind">Decision</span><span class="txt">Use Jest for unit tests</span><span class="stamp sm">Replaced by 0412</span></td><td>chatgpt</td><td>Kept as history</td></tr>
+          <tr><td class="n">0405</td><td><span class="kind">Decision</span><span class="txt">Store money as integer minor units, never floats</span></td><td>maya</td><td><span class="mark-ok">Confirmed</span> 1 source</td></tr>
+          <tr class="disputed"><td class="n">0419</td><td><span class="kind">Assumption</span><span class="txt">Webhooks arrive within 30 seconds</span></td><td>chatgpt</td><td><span class="mark-bad">Disputed</span> by 0431</td></tr>
+          <tr><td class="n">0431</td><td><span class="kind">Finding</span><span class="txt">On 14 August, webhook delivery took up to 4 minutes</span></td><td>maya</td><td><span class="mark-ok">Confirmed</span> 1 source</td></tr>
+          <tr class="disputed"><td class="n">0440</td><td><span class="kind">Finding</span><span class="txt">Cart service p95 latency is 180 ms</span></td><td>cursor</td><td><span class="mark-bad">Conflicts</span> with 0441</td></tr>
+          <tr class="disputed"><td class="n">0441</td><td><span class="kind">Finding</span><span class="txt">Cart service p95 latency is 420 ms</span></td><td>gemini</td><td><span class="mark-bad">Conflicts</span> with 0440</td></tr>
+          <tr><td class="n">0447</td><td><span class="kind">Question</span><span class="txt">Do we need partial refunds at launch?</span></td><td>maya</td><td>Open</td></tr>
+        </tbody>
+      </table>
+      <div class="designation" aria-hidden="true">Invented example · the same project ships with the product</div>
+    </div>
+    <ul class="points">
+      <li><h3>Nothing is overwritten</h3><p>A replaced decision is voided, not deleted. Its history stays, with who changed it and why.</p></li>
+      <li><h3>Conflicts stay visible</h3><p>When two tools disagree, both entries are shown as a conflict until a person settles it. Nothing picks a side quietly.</p></li>
+      <li><h3>AI tools cannot delete or confirm</h3><p>They read, add and correct. Deleting and vouching are for people, and every change is attributed.</p></li>
+    </ul>
+  </div>
+</section>
+
+<section class="band check" id="check" aria-labelledby="check-title">
+  <div class="wrap two">
+    <div>
+      <h2 id="check-title">It stops a plan before it repeats something you already fixed.</h2>
+      <p>Before an agent acts, it sends its plan to the record. If a step matches a decision the team replaced, or gives a different value for something already decided, the agent is told, with the entry that replaced it.</p>
+      <p class="small">The check is word matching and value comparison. It involves no AI model, so it is fast, repeatable and narrow: it will miss a paraphrase, and it never says a plan is right.</p>
+      <div class="choices" role="group" aria-label="Choose a planned step to check">
+        <button type="button" class="choice" data-check="0" aria-pressed="true">Add Jest tests for the cart reducer</button>
+        <button type="button" class="choice" data-check="1" aria-pressed="false">Call the Stripe SDK directly from the refund handler</button>
+        <button type="button" class="choice" data-check="2" aria-pressed="false">Store prices as floats</button>
+        <button type="button" class="choice" data-check="3" aria-pressed="false">Poll for payment webhooks for 30 seconds</button>
+        <button type="button" class="choice" data-check="4" aria-pressed="false">Rename the README</button>
+      </div>
+    </div>
+    <div class="sheet slipform" aria-live="polite" data-check-out>
+      <div class="stub"><span>Plan check</span><span class="serial" data-check-no>No. 0001</span></div>
+      <p class="lbl">Planned step</p>
+      <p class="entry" data-check-step>Add Jest tests for the cart reducer</p>
+      <div class="stamp" data-check-stamp>Resembles a replaced record</div>
+      <dl data-check-lines>
+        <dt>Replaced</dt><dd>0398, Use Jest for unit tests</dd>
+        <dt>Now</dt><dd>0412, Use Vitest for unit tests (confirmed)</dd>
+      </dl>
+      <p class="fine" data-check-fine>Exit code 2 from <code>nexus check</code>, so a CI step can fail on it.</p>
+    </div>
+  </div>
+</section>
+
+<section class="band receipt-band" id="receipt" aria-labelledby="receipt-title">
+  <div class="wrap two">
+    <div class="till" data-till>
+      <div class="till-paper">
+        <p class="t-brand">{{BRAND_NAME}}</p>
+        <p class="t-kind">Context receipt</p>
+        <p class="t-no">No. <b>RCP 7F3A 91C2</b></p>
+        <dl class="t-meta"><dt>Handed to</dt><dd>Cursor, for sam@acme.example</dd><dt>Model</dt><dd>as sent by the tool</dd><dt>When</dt><dd>14 Nov, 10:42</dd></dl>
+        <ul class="t-lines">
+          <li><span>Use Vitest for unit tests</span><i></i><b>v2 confirmed</b></li>
+          <li><span>Money is integer minor units</span><i></i><b>v2 confirmed</b></li>
+          <li data-changes><span>Payments go through PaymentsPort</span><i></i><b>v2 confirmed</b><em>now v3, reworded after this was read</em></li>
+          <li><span>Webhooks arrive within 30 s</span><i></i><b>v1 disputed</b></li>
+          <li><span>Use Jest for unit tests</span><i></i><b>v2 replaced</b></li>
+          <li><span>Cart p95 latency, 180 ms vs 420 ms</span><i></i><b>conflict</b></li>
+        </ul>
+        <p class="t-total"><span>6 of 18 records shown</span><span>~1,004 tokens</span></p>
+        <p class="t-foot" data-till-foot>Every record is still as the model saw it.</p>
+      </div>
+    </div>
+    <div>
+      <h2 id="receipt-title">When an agent surprises you, read the receipt.</h2>
+      <p>Each time a model is handed your project, {{BRAND_NAME}} writes down exactly which entries it was given and at which version. If an entry changed afterwards, the receipt says so. You stop guessing what the model knew.</p>
+      <p>The briefing itself is small on purpose: decisions first, then open conflicts and what was replaced. It is held unchanged for a few minutes at a time so your provider's prompt cache keeps working.</p>
+      <button type="button" class="btn onblue" data-till-toggle aria-pressed="false">Change a decision after it was read</button>
+    </div>
+  </div>
+</section>
+
+<section class="band ways" aria-labelledby="ways-title">
+  <div class="wrap">
+    <div class="head"><h2 id="ways-title">Three ways in, for three kinds of tool.</h2>
+      <p>You bring your own AI tools and your own provider keys. {{BRAND_NAME}} sells no model access and adds nothing to what your providers charge.</p></div>
+    <div class="tickets">
+      <article class="sheet ticket">
+        <div class="stub"><span>Connector</span><span>MCP</span></div>
+        <h3>Apps with connectors</h3>
+        <p>ChatGPT, Claude, Cursor and VS Code. Paste one address, sign in, choose a workspace. A connection can be read-only.</p>
+        <div class="cmd"><code>{{MCP_URL}}</code><button type="button" data-copy-text="{{MCP_URL}}">Copy</button></div>
+      </article>
+      <article class="sheet ticket">
+        <div class="stub"><span>Gateway</span><span>Base URL</span></div>
+        <h3>Tools that only take a base URL</h3>
+        <p>Point the tool at {{BRAND_NAME}}. Every request gets the briefing added and leaves a receipt. Your provider key can pass straight through.</p>
+        <div class="cmd"><code>ANTHROPIC_BASE_URL={{GATEWAY_URL}}</code><button type="button" data-copy-text="ANTHROPIC_BASE_URL={{GATEWAY_URL}}">Copy</button></div>
+      </article>
+      <article class="sheet ticket">
+        <div class="stub"><span>Command line</span><span>Hooks and CI</span></div>
+        <h3>Terminals, hooks and pipelines</h3>
+        <p>Print the briefing at the start of an agent session. Fail a build when a plan repeats a decision the team replaced.</p>
+        <div class="cmd"><code>nexus check "Checkout" "Add Jest tests"</code><button type="button" data-copy-text='nexus check "Checkout" "Add Jest tests"'>Copy</button></div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="band limits" aria-labelledby="limits-title">
+  <div class="wrap two">
+    <div>
+      <h2 id="limits-title">What it does not do.</h2>
+      <p>A record you cannot trust is worse than none, so here is where the edges are.</p>
+      <a class="link strong" href="/docs/limits">Read the full list of limits</a>
+    </div>
+    <ul class="nots">
+      <li><b>It calls no AI model.</b> Conflicts are found from structure and wording, so a contradiction nobody recorded stays hidden.</li>
+      <li><b>It does not judge evidence.</b> It records that a source is attached and who confirmed the entry. Whether the source is right is a person's call.</li>
+      <li><b>It cannot make an agent obey.</b> It puts the decision in front of the model and records that it did. Following it is still up to the model.</li>
+      <li><b>It keeps no conversations.</b> The gateway stores counts, model names and record numbers. Prompts and answers pass through and are not kept.</li>
+    </ul>
+  </div>
+</section>
+
+<section class="close" aria-labelledby="close-title">
+  <div class="sheet original closing">
+    <div class="stub" aria-hidden="true"><span>New workspace</span><span class="serial">No. 000001</span></div>
+    <h2 id="close-title">Start the record your agents read.</h2>
+    <p class="lede">Create a workspace, load the example project, connect one tool. If it is not useful by the end of the afternoon, export everything as one file and delete the workspace.</p>
+    <div class="sign">
+      <a class="btn primary big" href="{{SIGNUP_HREF}}">Create a workspace</a>
+      <a class="link strong" href="/docs/quickstart">Read the quickstart</a>
+    </div>
+    <div class="designation" aria-hidden="true">Sign here</div>
+  </div>
+</section>

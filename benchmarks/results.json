@@ -1,0 +1,321 @@
+{
+ "plan_check": {
+  "cases": 32,
+  "should_block": 16,
+  "nexus_check": {
+   "flagged_correctly": 13,
+   "false_alarms": 2,
+   "missed": 3,
+   "correctly_clear": 14,
+   "precision": 0.867,
+   "recall": 0.812,
+   "wrong": [
+    {
+     "kind": "missed",
+     "text": "Invoke the payment provider's API straight from the order controller",
+     "note": "paraphrase with almost no shared words"
+    },
+    {
+     "kind": "missed",
+     "text": "Go back to the old test runner we used at kickoff",
+     "note": "paraphrase with no shared words"
+    },
+    {
+     "kind": "missed",
+     "text": "Write the specs using the legacy testing library",
+     "note": "paraphrase with no shared words"
+    },
+    {
+     "kind": "false alarm",
+     "text": "Delete the direct Stripe SDK import from the checkout handlers",
+     "note": "mentions a replaced thing in order to remove it"
+    },
+    {
+     "kind": "false alarm",
+     "text": "Document why we moved from Jest to Vitest for unit tests",
+     "note": "mentions a replaced thing in order to explain it"
+    }
+   ]
+  },
+  "baseline_flag_nothing": {
+   "flagged_correctly": 0,
+   "false_alarms": 0,
+   "missed": 16,
+   "correctly_clear": 16,
+   "precision": null,
+   "recall": 0.0,
+   "wrong": [
+    {
+     "kind": "missed",
+     "text": "Add Jest tests for the cart reducer",
+     "note": ""
+    },
+    {
+     "kind": "missed",
+     "text": "Use Jest for the new unit tests",
+     "note": ""
+    },
+    {
+     "kind": "missed",
+     "text": "Write unit tests with Jest",
+     "note": ""
+    },
+    {
+     "kind": "missed",
+     "text": "Set up Jest for unit testing the checkout service",
+     "note": ""
+    },
+    {
+     "kind": "missed",
+     "text": "Unit tests should use Jest again",
+     "note": ""
+    },
+    {
+     "kind": "missed",
+     "text": "Call the Stripe SDK directly from the refund handler",
+     "note": ""
+    },
+    {
+     "kind": "missed",
+     "text": "Import the Stripe SDK in the checkout handlers",
+     "note": ""
+    },
+    {
+     "kind": "missed",
+     "text": "Use the Stripe client directly in checkout handler code",
+     "note": ""
+    },
+    {
+     "kind": "missed",
+     "text": "Call Stripe directly from handlers to save time",
+     "note": ""
+    },
+    {
+     "kind": "missed",
+     "text": "Invoke the payment provider's API straight from the order controller",
+     "note": "paraphrase with almost no shared words"
+    },
+    {
+     "kind": "missed",
+     "text": "Go back to the old test runner we used at kickoff",
+     "note": "paraphrase with no shared words"
+    },
+    {
+     "kind": "missed",
+     "text": "Write the specs using the legacy testing library",
+     "note": "paraphrase with no shared words"
+    },
+    {
+     "kind": "missed",
+     "text": "Store prices as floats",
+     "note": ""
+    },
+    {
+     "kind": "missed",
+     "text": "Use Mocha as the test framework",
+     "note": ""
+    },
+    {
+     "kind": "missed",
+     "text": "Represent money as decimal strings",
+     "note": ""
+    },
+    {
+     "kind": "missed",
+     "text": "Assume cart p95 latency is 250 ms",
+     "note": ""
+    }
+   ]
+  },
+  "baseline_any_shared_word": {
+   "flagged_correctly": 12,
+   "false_alarms": 10,
+   "missed": 4,
+   "correctly_clear": 6,
+   "precision": 0.545,
+   "recall": 0.75,
+   "wrong": [
+    {
+     "kind": "missed",
+     "text": "Invoke the payment provider's API straight from the order controller",
+     "note": "paraphrase with almost no shared words"
+    },
+    {
+     "kind": "missed",
+     "text": "Store prices as floats",
+     "note": ""
+    },
+    {
+     "kind": "missed",
+     "text": "Represent money as decimal strings",
+     "note": ""
+    },
+    {
+     "kind": "missed",
+     "text": "Assume cart p95 latency is 250 ms",
+     "note": ""
+    },
+    {
+     "kind": "false alarm",
+     "text": "Write Vitest tests for the cart reducer",
+     "note": ""
+    },
+    {
+     "kind": "false alarm",
+     "text": "Route the refund call through the PaymentsPort adapter",
+     "note": ""
+    },
+    {
+     "kind": "false alarm",
+     "text": "Use Vitest for the cart tests",
+     "note": ""
+    },
+    {
+     "kind": "false alarm",
+     "text": "Add unit tests for the tax display component",
+     "note": "shares 'unit tests' with a replaced record"
+    },
+    {
+     "kind": "false alarm",
+     "text": "Run the unit tests in CI on every push",
+     "note": "shares 'unit tests' with a replaced record"
+    },
+    {
+     "kind": "false alarm",
+     "text": "Create handlers for the new checkout endpoints",
+     "note": "shares 'checkout handlers' with a replaced record"
+    },
+    {
+     "kind": "false alarm",
+     "text": "Update the SDK version of the analytics client",
+     "note": "shares 'SDK' with a replaced record"
+    },
+    {
+     "kind": "false alarm",
+     "text": "Remove the leftover Jest configuration files",
+     "note": "mentions a replaced thing in order to remove it"
+    },
+    {
+     "kind": "false alarm",
+     "text": "Delete the direct Stripe SDK import from the checkout handlers",
+     "note": "mentions a replaced thing in order to remove it"
+    },
+    {
+     "kind": "false alarm",
+     "text": "Document why we moved from Jest to Vitest for unit tests",
+     "note": "mentions a replaced thing in order to explain it"
+    }
+   ]
+  }
+ },
+ "conflicts": {
+  "planted_per_class": 10,
+  "reported_conflicts": 20,
+  "explicit_link": {
+   "found": 10,
+   "of": 10
+  },
+  "same_key_different_value": {
+   "found": 10,
+   "of": 10
+  },
+  "prose_only": {
+   "found": 0,
+   "of": 10
+  },
+  "false_reports": 0
+ },
+ "briefing": {
+  "full_export_tokens": 7360,
+  "structured_context_tokens": 3153,
+  "briefing_600": {
+   "tokens": 558,
+   "records": 10,
+   "left_out": 12
+  },
+  "briefing_1200": {
+   "tokens": 1029,
+   "records": 18,
+   "left_out": 0
+  },
+  "briefing_2400": {
+   "tokens": 1029,
+   "records": 18,
+   "left_out": 0
+  },
+  "briefing_confirmed_only": {
+   "tokens": 539,
+   "records": 7
+  },
+  "records_in_project": 18,
+  "tokens_estimated_as": "characters divided by four"
+ },
+ "retrieval": {
+  "records": 2000,
+  "queries": 50,
+  "exact_reference": {
+   "first": 1.0,
+   "top_five": 1.0
+  },
+  "descriptive_words": {
+   "first": 0.82,
+   "top_five": 1.0
+  },
+  "baseline_most_recent_five": {
+   "top_five": 0.0
+  },
+  "note": "Descriptive queries are ambiguous by construction: many records share the same topic, verb and object, so the planted target is one of several equally good matches."
+ },
+ "speed": {
+  "200_records": {
+   "snapshot": {
+    "median_ms": 1.7,
+    "p95_ms": 1.73
+   },
+   "briefing": {
+    "median_ms": 2.56,
+    "p95_ms": 2.73
+   },
+   "review": {
+    "median_ms": 0.39,
+    "p95_ms": 0.4
+   },
+   "plan_check_3_steps": {
+    "median_ms": 2.93,
+    "p95_ms": 3.09
+   },
+   "search": {
+    "median_ms": 0.66,
+    "p95_ms": 0.74
+   }
+  },
+  "2000_records": {
+   "snapshot": {
+    "median_ms": 16.93,
+    "p95_ms": 17.16
+   },
+   "briefing": {
+    "median_ms": 26.71,
+    "p95_ms": 27.3
+   },
+   "review": {
+    "median_ms": 4.49,
+    "p95_ms": 4.78
+   },
+   "plan_check_3_steps": {
+    "median_ms": 31.2,
+    "p95_ms": 31.56
+   },
+   "search": {
+    "median_ms": 1.56,
+    "p95_ms": 1.73
+   }
+  }
+ },
+ "environment": {
+  "python": "3.13.5",
+  "platform": "darwin",
+  "seed": 20261116,
+  "note": "Timings are from one machine and one run; treat them as orders of magnitude."
+ }
+}

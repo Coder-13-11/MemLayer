@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{TITLE}} · {{BRAND_NAME}}</title>
+<meta name="description" content="NEXUS is the shared record of what your project has decided. Every AI coding tool your team uses reads the same copy, and you get a receipt of what each one was told.">
+<meta name="color-scheme" content="light">
+<link rel="icon" href="/static/site/favicon.svg" type="image/svg+xml">
+<link rel="preload" href="/static/fonts/archivo-var.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/static/site/site.css">
+</head>
+<body class="site page-{{PAGE}}">
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-head">
+  <a class="mark" href="/" aria-label="{{BRAND_NAME}} home">{{MARK}}<span>{{BRAND_NAME}}</span></a>
+  <nav class="site-nav" aria-label="Site">
+    <a href="/#record">The record</a>
+    <a href="/#check">The check</a>
+    <a href="/#receipt">Receipts</a>
+    <a href="/docs">Docs</a>
+    <a href="/security">Security</a>
+    <a href="/pricing">Pricing</a>
+  </nav>
+  <div class="site-actions">
+    <a class="link" href="/login">Sign in</a>
+    <a class="btn primary" href="{{SIGNUP_HREF}}">Create a workspace</a>
+    <details class="site-menu">
+      <summary>Menu</summary>
+      <nav aria-label="Site, compact">
+        <a href="/#record">The record</a><a href="/#check">The check</a><a href="/#receipt">Receipts</a>
+        <a href="/docs">Docs</a><a href="/security">Security</a><a href="/pricing">Pricing</a><a href="/login">Sign in</a>
+      </nav>
+    </details>
+  </div>
+</header>
+<main id="main">
+{{CONTENT}}
+</main>
+<footer class="site-foot">
+  <div class="foot-grid">
+    <div>
+      <a class="mark" href="/">{{MARK}}<span>{{BRAND_NAME}}</span></a>
+      <p>One record of what your project has decided, for every person and AI tool that works on it.</p>
+    </div>
+    <nav aria-label="Product"><h2>Product</h2><a href="/#record">The record</a><a href="/#check">The check</a><a href="/#receipt">Receipts</a><a href="/pricing">Pricing</a><a href="/changelog">Changelog</a></nav>
+    <nav aria-label="Build"><h2>Build</h2><a href="/docs">Documentation</a><a href="/docs/quickstart">Quickstart</a><a href="/docs/api">REST API</a><a href="/docs/gateway">Gateway</a><a href="/docs/self-hosting">Self-hosting</a></nav>
+    <nav aria-label="Trust"><h2>Trust</h2><a href="/security">Security</a><a href="/docs/limits">What it does not do</a><a href="/login">Sign in</a></nav>
+  </div>
+  <p class="fine">Version {{VERSION}}. The projects, people and numbers shown on these pages are invented examples. No customer data is shown anywhere on this site.</p>
+</footer>
+<script src="/static/site/site.js" defer></script>
+</body>
+</html>

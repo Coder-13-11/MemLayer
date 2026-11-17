@@ -1,0 +1,39 @@
+<!--title: Command line -->
+<h1>Command line</h1>
+<p>The <code>nexus</code> command talks to a server when <code>NEXUS_URL</code> and <code>NEXUS_API_KEY</code> are set, and to a local database file when they are not.</p>
+<pre><code>pip install .               # from a checkout of this repository
+export NEXUS_URL={{PUBLIC_URL}}
+export NEXUS_API_KEY=nxk_...</code></pre>
+
+<h2>Print the briefing</h2>
+<pre><code>nexus brief "Checkout rebuild"
+nexus brief "Checkout rebuild" --budget 600 --policy confirmed</code></pre>
+<p>This prints exactly what a model is handed. Run it at the start of a coding-agent session so the agent reads the record without having to decide to. In Claude Code, a session-start hook that runs the command adds its output to the session:</p>
+<pre><code>{
+  "hooks": {
+    "SessionStart": [
+      {"hooks": [{"type": "command", "command": "nexus brief \"Checkout rebuild\""}]}
+    ]
+  }
+}</code></pre>
+
+<h2>Check a plan</h2>
+<pre><code>nexus check "Checkout rebuild" "Add Jest tests for the cart" "Rename the README"
+nexus check "Checkout rebuild" --file plan.txt</code></pre>
+<p>The command exits with status 2 when a step conflicts with a recorded decision or resembles something the team replaced, so it can fail a pipeline step. Add <code>--warn-only</code> to always exit 0, and <code>--json</code> for machine-readable output.</p>
+
+<h2>Local, single-user mode</h2>
+<p>Without a server, the same commands and a local dashboard work against one SQLite file:</p>
+<pre><code>nexus web                 # a dashboard on http://127.0.0.1:8765
+nexus serve               # an MCP server on standard input and output
+nexus import notes.md     # store a document and extract its entries</code></pre>
+
+<h2>Operating a server</h2>
+<pre><code>nexus admin migrate              # apply pending database migrations
+nexus admin status               # show applied and pending migrations
+nexus admin workspaces           # list workspaces with size and plan
+nexus admin set-plan acme team   # change a workspace's plan or limits
+nexus admin outbox               # read mail that was not sent
+nexus admin reset-link a@b.com   # a password link, when mail is not set up
+nexus admin generate-key         # a new NEXUS_SECRET_KEY
+nexus admin rotate-keys          # re-seal provider keys with the current key</code></pre>

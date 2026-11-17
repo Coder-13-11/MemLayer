@@ -1,19 +1,19 @@
-# Example Fly.io config. Copy to fly.toml, change app and MEMLAYER_PUBLIC_URL, then:
-#   fly volumes create memlayer_data --size 1
-#   fly secrets set MEMLAYER_SIGNUP_CODE=<invite code>   # optional: invite-only sign-up
+# Example Fly.io config. Copy to fly.toml, change app and NEXUS_PUBLIC_URL, then:
+#   fly volumes create nexus_data --size 1
+#   fly secrets set NEXUS_SIGNUP_CODE=<invite code>   # optional: invite-only sign-up
 #   fly deploy
-app = "memlayer-example"
+app = "nexus-example"
 primary_region = "iad"
 
 [build]
 
 [env]
-  MEMLAYER_PUBLIC_URL = "https://memlayer-example.fly.dev"
-  MEMLAYER_DATA_DIR = "/data"
+  NEXUS_PUBLIC_URL = "https://nexus-example.fly.dev"
+  NEXUS_DATA_DIR = "/data"
   PORT = "8000"
 
 [mounts]
-  source = "memlayer_data"
+  source = "nexus_data"
   destination = "/data"
 
 [http_service]

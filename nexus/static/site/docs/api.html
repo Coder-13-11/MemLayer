@@ -1,0 +1,43 @@
+<!--title: REST API -->
+<h1>REST API</h1>
+<p>The API under <code>{{API_URL}}</code> is the same one the app uses, authenticated with an API key instead of a browser session.</p>
+<pre><code>curl {{API_URL}}/projects -H "Authorization: Bearer nxk_..."</code></pre>
+<p>A key belongs to one workspace and is either read-only or read-and-write. It can never confirm an entry, manage members or create other keys. Each key is limited to a number of requests per minute set by the workspace's plan; over the limit you receive <code>429</code> with a <code>Retry-After</code> header. Errors are JSON: <code>{"error": "..."}</code>.</p>
+
+<h2>Reading</h2>
+<table>
+<thead><tr><th>Request</th><th>Returns</th></tr></thead>
+<tbody>
+<tr><td><code>GET /v1/meta</code></td><td>The workspace, the key's role and scopes.</td></tr>
+<tr><td><code>GET /v1/projects</code></td><td>Projects with counts by status.</td></tr>
+<tr><td><code>GET /v1/projects/{project}</code></td><td>One project's overview. <code>{project}</code> is an id or a name.</td></tr>
+<tr><td><code>GET /v1/projects/{project}/context?q=</code></td><td>The structured context an MCP client receives.</td></tr>
+<tr><td><code>GET /v1/projects/{project}/briefing?budget=&amp;policy=&amp;q=</code></td><td>The briefing text, the entries in it and a receipt id. Add <code>receipt=0</code> to preview without a receipt.</td></tr>
+<tr><td><code>GET /v1/projects/{project}/records?kind=&amp;status=&amp;q=</code></td><td>Entries, filtered.</td></tr>
+<tr><td><code>GET /v1/records/{id}</code></td><td>One entry with evidence, links, source and history.</td></tr>
+<tr><td><code>GET /v1/projects/{project}/gaps</code></td><td>The Review list.</td></tr>
+<tr><td><code>GET /v1/projects/{project}/graph</code>, <code>/sources</code>, <code>/export</code></td><td>Links between entries; original sources; a full JSON export.</td></tr>
+<tr><td><code>GET /v1/search?q=</code></td><td>Keyword search across the workspace.</td></tr>
+<tr><td><code>GET /v1/receipts/{id}</code></td><td>A receipt.</td></tr>
+</tbody>
+</table>
+
+<h2>Checking a plan</h2>
+<pre><code>curl -X POST {{API_URL}}/projects/Checkout%20rebuild/check \
+  -H "Authorization: Bearer nxk_..." -H "Content-Type: application/json" \
+  -d '{"statements": ["Add Jest tests for the cart",
+                      {"text": "Store prices as floats", "subject": "money.representation", "value": "float"}]}'</code></pre>
+<p>Each result has a <code>verdict</code> of <code>conflict</code>, <code>resembles_replaced</code>, <code>review</code> or <code>clear</code>, with the entries behind it. A read-only key can call this.</p>
+
+<h2>Writing</h2>
+<table>
+<thead><tr><th>Request</th><th>Does</th></tr></thead>
+<tbody>
+<tr><td><code>POST /v1/projects</code></td><td>Create a project: <code>name</code>, <code>objective</code>, <code>description</code>.</td></tr>
+<tr><td><code>POST /v1/projects/{project}/records</code></td><td>Add an entry: <code>kind</code>, <code>title</code>, <code>content</code>, <code>origin_model</code>, <code>importance</code>, <code>subject</code>, <code>value</code>, <code>evidence[]</code>, <code>relations[]</code>.</td></tr>
+<tr><td><code>PATCH /v1/records/{id}</code></td><td>Correct an entry. Requires a <code>reason</code>. The previous version is kept.</td></tr>
+<tr><td><code>POST /v1/projects/{project}/import</code></td><td>Store a document as a source and extract entries from structured Markdown.</td></tr>
+<tr><td><code>DELETE /v1/records/{id}</code></td><td>Delete an entry. Deleting a project is not available to keys.</td></tr>
+</tbody>
+</table>
+<p>The model gateway shares the <code>/v1</code> prefix and the same keys: see <a href="/docs/gateway">Gateway</a>.</p>

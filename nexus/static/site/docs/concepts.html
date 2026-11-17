@@ -1,0 +1,44 @@
+<!--title: Concepts -->
+<h1>Concepts</h1>
+<p>The record is a set of entries per project. Each entry is a claim with an author, a status and a history.</p>
+
+<h2>Entries</h2>
+<table>
+<thead><tr><th>Kind</th><th>Use it for</th></tr></thead>
+<tbody>
+<tr><td>Decision</td><td>Something the team has settled. Agents are told to follow these.</td></tr>
+<tr><td>Assumption, hypothesis</td><td>Something being relied on that is not proven.</td></tr>
+<tr><td>Finding, evidence</td><td>Something observed or measured.</td></tr>
+<tr><td>Question</td><td>Something not yet answered. A decision can depend on one.</td></tr>
+<tr><td>Objective, task, note</td><td>The goal, work to do, and everything else.</td></tr>
+</tbody>
+</table>
+<p>An entry can carry a <strong>claim key</strong> and value, such as <code>test.framework = vitest</code>. Two active entries with the same key and different values are reported as a possible conflict.</p>
+
+<h2>How far an entry was checked</h2>
+<table>
+<thead><tr><th>Shown as</th><th>Means</th></tr></thead>
+<tbody>
+<tr><td>Confirmed</td><td>A signed-in person vouched for it as written. Programs and AI tools cannot do this.</td></tr>
+<tr><td>Evidence-supported</td><td>At least one source is attached. The source is not judged.</td></tr>
+<tr><td>Unverified</td><td>Nobody has checked it. Everything an AI tool writes starts here.</td></tr>
+<tr><td>Challenged, contradicted</td><td>Another entry disputes it.</td></tr>
+<tr><td>Superseded, retracted, resolved</td><td>No longer current. Kept as history.</td></tr>
+</tbody>
+</table>
+<p>Rewording a confirmed entry (its title, text, key or value) clears the confirmation, whoever does it. What was vouched for no longer exists.</p>
+
+<h2>Replacing instead of overwriting</h2>
+<p>A newer entry <em>supersedes</em> an older one. The old entry stays, marked as replaced and linked to its replacement. Every edit also keeps the previous version with who changed it and the reason they gave.</p>
+
+<h2>Review</h2>
+<p>The Review tab lists what needs a person: explicit contradictions, entries with the same key and different values, claims with no evidence, assumptions something depends on, decisions resting on an open question or a replaced entry. Each item names the entries it is based on and how sure it is: <em>certain</em> (a fact about the data), <em>stated</em> (someone recorded the conflict) or <em>possible</em> (a match that needs judgement).</p>
+
+<h2>The briefing</h2>
+<p>The text a model is handed when it does not ask through tools. It is small by design, with a size limit you set, and it is filled in a fixed order: decisions, unresolved conflicts, replaced entries, assumptions, open questions, findings. Each line carries the entry's number and how far it was checked. It is the same bytes for the same project state. You can restrict it to entries a person confirmed.</p>
+
+<h2>Receipts</h2>
+<p>Each time a model is handed a project, a receipt records which entries it was given, at which version and status, to whom, through which way in, and a hash of the exact text. Opening a receipt later shows which of those entries have changed since.</p>
+
+<h2>The check</h2>
+<p>Compares planned steps with the record and reports three things separately: a <em>conflict</em> (same claim key, different value), <em>resembles a replaced record</em> (close in wording to something superseded or retracted), and <em>related</em> entries to read. It involves no AI model. See <a href="/docs/limits">what it does not do</a>.</p>

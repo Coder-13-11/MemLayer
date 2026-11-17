@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{BRAND_NAME}}</title>
+  <meta name="color-scheme" content="light dark">
+  <meta name="robots" content="noindex">
+  <link rel="icon" href="/static/site/favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="/static/fonts/archivo-var.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/static/app.css">
+  <script src="/static/js/theme.js"></script>
+</head>
+<body>
+  <a class="skip" href="#view">Skip to content</a>
+  <div class="app" id="app">
+    <aside class="sidebar" id="sidebar" aria-label="Navigation"></aside>
+    <div class="main-col">
+      <header class="topbar" id="topbar"></header>
+      <main class="view" id="view" tabindex="-1"></main>
+    </div>
+    <aside class="panel" id="panel" aria-label="Details" hidden></aside>
+  </div>
+  <div class="palette-backdrop" id="palette" hidden></div>
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+  <script type="module" src="/static/js/main.js"></script>
+</body>
+</html>

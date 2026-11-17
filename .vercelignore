@@ -8,4 +8,4 @@ scripts
 Dockerfile
 fly.toml.example
 demo_output.txt
-memlayer.egg-info
+nexus.egg-info

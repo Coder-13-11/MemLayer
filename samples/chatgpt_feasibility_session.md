@@ -5,7 +5,7 @@ origin_model: chatgpt
 conversation_id: synthetic-chatgpt-2026-10-28
 source_kind: conversation
 ---
-<!-- Synthetic test data written for the memlayer prototype. Not a real conversation. -->
+<!-- Synthetic test data written for the nexus prototype. Not a real conversation. -->
 
 ## Objective
 Map year-over-year coastal wetland loss along the Louisiana coast from 2017 to 2025 using free satellite imagery and a segmentation model that runs on a single consumer GPU.

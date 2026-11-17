@@ -1,0 +1,48 @@
+<!--title: Self-hosting -->
+<h1>Self-hosting</h1>
+<p>{{BRAND_NAME}} is one Python process. It needs either a folder for SQLite files or a Postgres database, and an HTTPS address in front of it.</p>
+
+<h2>With Docker and Postgres</h2>
+<pre><code>cp .env.example .env        # set NEXUS_PUBLIC_URL and NEXUS_SECRET_KEY
+docker compose up -d</code></pre>
+<p>The compose file starts the service and Postgres 17. Put a TLS-terminating proxy in front of port 8000.</p>
+
+<h2>Without Docker</h2>
+<pre><code>python -m venv .venv &amp;&amp; . .venv/bin/activate
+pip install .
+export NEXUS_PUBLIC_URL=https://nexus.example.com
+export NEXUS_SECRET_KEY=$(nexus admin generate-key)
+nexus hosted --data-dir /var/lib/nexus</code></pre>
+
+<h2>Settings</h2>
+<table>
+<thead><tr><th>Variable</th><th>Meaning</th></tr></thead>
+<tbody>
+<tr><td><code>NEXUS_PUBLIC_URL</code></td><td>The https address people and AI apps connect to. Required.</td></tr>
+<tr><td><code>NEXUS_DATABASE_URL</code></td><td>Postgres URL. <code>DATABASE_URL</code> is accepted too. Without it, SQLite files are used.</td></tr>
+<tr><td><code>NEXUS_DATA_DIR</code></td><td>Folder for SQLite files. Default <code>~/.nexus/hosted</code>.</td></tr>
+<tr><td><code>NEXUS_SECRET_KEY</code></td><td>32 random bytes, base64 or hex. Seals stored provider keys. Required on Postgres to store them.</td></tr>
+<tr><td><code>NEXUS_SECRET_KEYS_OLD</code></td><td>Earlier keys, comma separated, accepted for reading during rotation.</td></tr>
+<tr><td><code>NEXUS_SIGNUP</code></td><td><code>open</code>, <code>invite</code> (needs <code>NEXUS_SIGNUP_CODE</code> or a workspace invitation) or <code>closed</code> (invitations only).</td></tr>
+<tr><td><code>NEXUS_SMTP_URL</code>, <code>NEXUS_MAIL_FROM</code></td><td>Outgoing mail, for example <code>smtp://user:password@host:587</code>. Optional.</td></tr>
+<tr><td><code>NEXUS_BRIEFING_PIN_SECONDS</code></td><td>How long a gateway briefing is held unchanged. Default 900.</td></tr>
+<tr><td><code>NEXUS_MOCK_PROVIDER</code></td><td><code>0</code> turns off the built-in mock model.</td></tr>
+</tbody>
+</table>
+
+<h2>How data is stored</h2>
+<p>A control database holds accounts, workspaces, keys, usage and the audit log. Each workspace's record is stored separately: its own SQLite file under <code>workspaces/</code>, or its own Postgres schema. Deleting a workspace removes that file or schema.</p>
+<p>Migrations are numbered SQL files that run on both databases. The service applies pending ones at start; <code>nexus admin status</code> shows them and <code>/readyz</code> reports them.</p>
+
+<h2>Health</h2>
+<p><code>/healthz</code> answers when the process is up. <code>/readyz</code> answers 200 when the database is reachable and migrations are applied.</p>
+
+<h2>Backups</h2>
+<p>On Postgres, back up the whole database: the control schema and every workspace schema. On SQLite, back up the data folder, including <code>secret.key</code> if you did not set <code>NEXUS_SECRET_KEY</code>. Without the secret key, stored provider keys cannot be read. Any admin can also export a workspace as JSON from the app.</p>
+
+<h2>Scaling</h2>
+<p>One instance serves a team comfortably. Rate limits and briefing pins are held in memory per instance, so with several instances each counts for itself. Each instance uses one database connection. The roadmap in the repository says what changes first under load.</p>
+
+<h2>Rotating the secret key</h2>
+<pre><code>NEXUS_SECRET_KEY=&lt;new&gt; NEXUS_SECRET_KEYS_OLD=&lt;old&gt; nexus admin rotate-keys</code></pre>
+<p>Then remove the old key from the environment.</p>

@@ -3,27 +3,28 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "memlayer"
-version = "0.1.0"
-description = "Local, model-independent memory and knowledge-gap layer for LLM clients, served over MCP"
+name = "nexus"
+version = "0.2.0"
+description = "A shared, provenance-tracked project record for teams and their AI tools: MCP server, REST API and gateway"
 readme = "README.md"
 requires-python = ">=3.10"
-dependencies = ["mcp>=1.10,<2", "starlette>=0.27", "uvicorn>=0.30", "psycopg[binary]>=3.2"]  # built and tested against the 1.x SDK API
+dependencies = ["mcp>=1.10,<2", "starlette>=0.27", "uvicorn>=0.30", "psycopg[binary]>=3.2", "httpx>=0.27",
+                "cryptography>=42", "python-multipart>=0.0.9"]  # built and tested against the 1.x SDK API
 
 [project.optional-dependencies]
 dev = ["pytest>=8", "anyio>=4"]
 
 [project.scripts]
-memlayer = "memlayer.cli:main"
-memlayer-server = "memlayer.server:main"
-memlayer-web = "memlayer.web:main"
-memlayer-hosted = "memlayer.hosted:main"
+nexus = "nexus.cli:main"
+nexus-server = "nexus.server:main"
+nexus-web = "nexus.web:main"
+nexus-hosted = "nexus.hosted:main"
 
 [tool.setuptools]
-packages = ["memlayer"]
+packages = ["nexus", "memlayer"]
 
 [tool.setuptools.package-data]
-memlayer = ["schema.sql", "schema_pg.sql", "accounts_pg.sql", "static/*", "static/**/*"]
+nexus = ["schema.sql", "schema_pg.sql", "migrations/*.sql", "static/*", "static/**/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
